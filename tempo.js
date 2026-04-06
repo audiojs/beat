@@ -31,7 +31,7 @@ export default function tempo(data, params) {
     let offset = f * hopSize
     for (let i = 0; i < frameSize; i++) frame[i] = (data[offset + i] || 0) * win[i]
 
-    let mag = fft(frame)
+    let mag = new Float64Array(fft(frame)) // clone — fft reuses internal buffer
     if (prevMag) {
       let flux = 0
       for (let i = 0; i < mag.length; i++) {
