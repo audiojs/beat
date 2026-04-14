@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>beat-detection</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&family=Chivo+Mono:wght@400;500&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#e9ebe7;--paper:#f6f7f3;--fg:#1f221f;--muted:#6e756d;
+  --line:#c4c9bf;--line-soft:#d8ddd4;--accent:#ca6b63;--ok:#6f8c6a;
+  --dim:#9aa196;--bad:#bf655d;--sans:'Archivo',system-ui,sans-serif;--mono:'Chivo Mono',monospace;
+}
+
+body{
+  font:400 14px/1.45 var(--sans);
+  color:var(--fg);
+  background:linear-gradient(180deg,var(--paper),var(--bg));
+  min-height:100vh;
+  padding:44px 44px 60px;
+  margin:0;
+}
+h1{font:500 clamp(20px,2.5vw,26px)/1 var(--sans);letter-spacing:0.16em;text-transform:uppercase;margin-bottom:8px}
+.subtitle{font:400 11px/1.4 var(--mono);color:var(--muted);margin-bottom:30px;letter-spacing:0.03em}
+
+/* source selector */
+.source-bar{display:flex;align-items:center;gap:10px;margin-bottom:28px;flex-wrap:wrap}
+.source-bar label{font:600 10px/1 var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:0.18em}
+.source-btn{
+  font:400 12px/1 var(--sans);padding:7px 15px;border:1px solid var(--line);border-radius:0;
+  background:var(--paper);color:var(--fg);cursor:pointer;transition:all .12s ease;letter-spacing:0.02em;
+}
+.source-btn:hover{border-color:var(--fg);background:color-mix(in oklch,var(--paper) 92%,var(--fg) 8%)}
+.source-btn.active{border-color:var(--fg);background:var(--fg);color:var(--paper)}
+.source-btn:disabled{opacity:.3;cursor:default}
+
+/* playback mode */
+.play-mode{display:flex;gap:0;margin-left:auto}
+.play-mode button{
+  font:400 11px/1 var(--sans);padding:5px 12px;border:1px solid var(--line);
+  background:var(--paper);color:var(--muted);cursor:pointer;transition:all .12s ease;letter-spacing:0.02em;
+}
+.play-mode button:not(:first-child){border-left:0}
+.play-mode button:first-child{border-radius:2px 0 0 2px}
+.play-mode button:last-child{border-radius:0 2px 2px 0}
+.play-mode button:hover{color:var(--fg);border-color:var(--fg)}
+.play-mode button.active{border-color:var(--fg);background:var(--fg);color:var(--paper)}
+
+#status{font:400 11px/1 var(--mono);color:var(--muted);margin-left:auto;white-space:nowrap}
+#status.busy{color:var(--ok)}
+
+/* results grid */
+.results{
+  display:grid;
+  grid-template-columns:130px repeat(4,minmax(160px,1fr));
+  gap:0;
+  border:1px solid var(--fg);
+  background:var(--paper);
+  box-shadow:0 1px 0 color-mix(in oklch,var(--fg) 10%,transparent);
+}
+.grid-hdr{
+  font:600 8px/1 var(--sans);text-transform:uppercase;letter-spacing:0.16em;
+  padding:10px 8px 9px;border-bottom:1px solid var(--line);color:var(--muted);
+}
+.grid-hdr:first-child{border-right:1px solid var(--line)}
+.grid-hdr.section{background:color-mix(in oklch,var(--fg) 6%,var(--paper));font-weight:700;letter-spacing:0.2em}
+.algo-label{
+  font:500 11px/1 var(--sans);padding:11px 8px;
+  border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;gap:3px;
+}
+.algo-label .tag{font:400 7px/1 var(--mono);color:var(--dim);text-transform:uppercase;letter-spacing:0.07em}
+
+.cell{
+  padding:6px 8px;border-bottom:1px solid var(--line-soft);
+  display:flex;flex-direction:column;gap:4px;min-height:72px;position:relative;
+}
+
+/* metric badges */
+.metric{
+  font:400 10px/1 var(--mono);color:var(--dim);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.metric b{color:var(--muted);font-weight:500}
+.metric.good b{color:var(--ok)}
+.metric.good{color:var(--ok)}
+.metric.warn b{color:var(--accent)}
+.metric.warn{color:var(--accent)}
+.metric.bad b{color:var(--bad)}
+.metric.bad{color:var(--bad)}
+
+/* waveform canvas */
+.wave-canvas{width:100%;height:40px;--wave-color:var(--dim)}
+
+/* beat markers overlay */
+.beat-overlay{position:relative;width:100%;height:24px;margin-top:2px}
+.beat-bar{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);opacity:0.7;border-radius:1px}
+.beat-bar.downbeat{width:3px;opacity:1;background:var(--fg)}
+
+/* playback controls */
+.cell-actions{display:flex;align-items:center;gap:6px}
+.play-btn{
+  width:22px;height:22px;border-radius:50%;border:1px solid var(--line);
+  background:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .12s ease;flex-shrink:0;
+}
+.play-btn:hover{border-color:var(--fg);background:color-mix(in oklch,var(--paper) 94%,var(--fg) 6%)}
+.play-btn.playing{border-color:var(--accent);background:var(--accent)}
+.play-btn svg{width:8px;height:8px;fill:var(--fg)}
+.play-btn.playing svg{fill:var(--paper)}
+
+/* original row */
+.orig-row{background:color-mix(in oklch,var(--ok) 4%,transparent)}
+.orig-row .algo-label{color:var(--accent);font-weight:500}
+
+/* skeleton */
+.cell.loading{position:relative;overflow:hidden}
+.cell.loading::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 30%,color-mix(in oklch,var(--fg) 4%,transparent) 50%,transparent 70%);
+  animation:shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+/* benchbar */
+.benchbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.bench-card{
+  border:1px solid var(--line);background:color-mix(in oklch,var(--paper) 96%,var(--bg) 4%);
+  padding:10px 12px 11px;min-height:58px;
+}
+.bench-card label{display:block;font:600 9px/1 var(--sans);text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);margin-bottom:8px}
+.bench-card strong{display:block;font:500 15px/1 var(--sans);color:var(--fg)}
+.bench-card span{display:block;font:400 10px/1.4 var(--mono);color:var(--dim);margin-top:5px}
+
+/* github link */
+.github-link{position:fixed;top:20px;right:20px;opacity:0.7;transition:opacity .2s ease;z-index:1000}
+.github-link:hover{opacity:1}
+.github-link svg{width:28px;height:28px;fill:var(--fg)}
+
+/* footer */
+.footer{margin-top:22px;font:400 10px/1.8 var(--mono);color:var(--dim);letter-spacing:0.01em}
+.footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+.footer a:hover{color:var(--fg);border-color:var(--fg)}
+
+@media(max-width:900px){
+  body{padding:22px 16px 34px}
+  .benchbar{grid-template-columns:1fr 1fr}
+  .results{grid-template-columns:minmax(70px,110px) repeat(4,1fr)}
+  .algo-label .tag{display:none}
+}
+@media(max-width:600px){
+  .results{grid-template-columns:minmax(50px,90px) repeat(4,1fr);font-size:9px}
+  .source-btn{padding:5px 10px;font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<a href="https://github.com/audiojs/beat-detection" class="github-link" target="_blank" rel="noopener">
+  <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+</a>
+
+<h1>beat-detection</h1>
+<p class="subtitle">Onset detection, tempo estimation, beat tracking — 8 algorithms, live in-browser</p>
+
+<div class="source-bar">
+  <label>Source</label>
+  <button class="source-btn active" data-src="rock">Rock 120</button>
+  <button class="source-btn" data-src="funk">Funk 90</button>
+  <button class="source-btn" data-src="ballad">Ballad 60</button>
+  <button class="source-btn" data-src="breakbeat">Breakbeat 100</button>
+  <button class="source-btn" data-src="voice">Voice (Lena)</button>
+  <span style="width:6px"></span>
+  <button class="source-btn" data-src="edm">EDM 128</button>
+  <button class="source-btn" data-src="hiphop">Hip-hop 90</button>
+  <button class="source-btn" data-src="disco">Disco 120</button>
+  <button class="source-btn" data-src="jazz">Jazz 140</button>
+  <button class="source-btn" data-src="reggae">Reggae 80</button>
+  <div class="play-mode" id="playMode">
+    <button data-mode="both" class="active" title="Play source audio mixed with click track">Both</button>
+    <button data-mode="clicks" title="Play click track only">Clicks</button>
+    <button data-mode="audio" title="Play source audio only">Audio</button>
+  </div>
+  <span id="status"></span>
+</div>
+
+<div class="benchbar" id="benchbar"></div>
+
+<div class="results" id="grid"></div>
+
+<div class="footer">
+  8 algorithms processed in-browser. Each cell timed with <code>performance.now()</code>.
+  <br>Voice source: <a href="https://github.com/audiojs/audio-lena">audio-lena</a>. All percussion synthesized in-browser (FM + noise).
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "fourier-transform": "https://esm.sh/fourier-transform",
+    "window-function": "https://esm.sh/window-function",
+    "beat-detection": "./index.js",
+    "beat-detection/synth": "./synth.js"
+  }
+}
+</script>
+<script type="module">
+import { onsets, energyOnsets, phaseOnsets, bandOnsets, tempo, combTempo, detect, beatTrack } from 'beat-detection'
+import { rock, funk, ballad, breakbeat, edm, hiphop, disco, jazz, reggae } from 'beat-detection/synth'
+
+const SR = 44100
+const PI2 = Math.PI * 2
+
+// ── playback mode ─────────────────────────
+let playMode = 'both' // 'both' | 'clicks' | 'audio'
+document.querySelectorAll('#playMode button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#playMode button').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    playMode = btn.dataset.mode
+    // re-trigger current playback with new mode
+    if (playing?._audio) playMixed(playing._audio, playing._clicks, playing.btn)
+  }
+})
+
+// ── generators imported from synth.js ────
+
+async function loadLena() {
+  let resp = await fetch('https://cdn.jsdelivr.net/npm/audio-lena/lena.mp3')
+  let buf = await resp.arrayBuffer()
+  let ctx = new OfflineAudioContext(1, SR * 13, SR)
+  let abuf = await ctx.decodeAudioData(buf)
+  let full = abuf.getChannelData(0)
+  let start = Math.floor(SR * 1.5), len = Math.floor(SR * 4)
+  let d = new Float32Array(len)
+  d.set(full.subarray(start, start + len))
+  let fade = 400
+  for (let i = 0; i < fade; i++) { let g = i / fade; d[i] *= g; d[len - 1 - i] *= g }
+  return d
+}
+
+// ── audio playback ────────────────────────
+let actx = null, playing = null
+
+function ensureCtx() {
+  if (!actx) actx = new AudioContext({ sampleRate: SR })
+  return actx
+}
+
+function mixSamples(a, b) {
+  let len = Math.max(a.length, b.length), d = new Float32Array(len)
+  for (let i = 0; i < len; i++) d[i] = (a[i] || 0) * 0.6 + (b[i] || 0) * 0.7
+  return d
+}
+
+function resolvePlayback(audio, clicks) {
+  if (playMode === 'audio') return audio
+  if (playMode === 'clicks') return clicks
+  return mixSamples(audio, clicks)
+}
+
+function play(samples, btn, offset) {
+  let ctx = ensureCtx()
+  if (playing) { playing.src.stop(); playing.btn.classList.remove('playing'); if (playing.btn === btn && !offset) { playing = null; return } }
+  offset = offset || 0
+  let buf = ctx.createBuffer(1, samples.length, SR)
+  buf.getChannelData(0).set(samples)
+  let src = ctx.createBufferSource()
+  src.buffer = buf
+  src.connect(ctx.destination)
+  src.start(0, offset)
+  btn.classList.add('playing')
+  playing = { src, btn, startTime: ctx.currentTime - offset, duration: samples.length / SR }
+  src.onended = () => { btn.classList.remove('playing'); if (playing?.src === src) playing = null }
+}
+
+function playMixed(audio, clicks, btn) {
+  let ctx = ensureCtx()
+  let offset = 0
+  // if same button is playing and this is a re-trigger (mode switch), keep position
+  if (playing?.btn === btn && playing?._audio === audio) {
+    offset = actx.currentTime - playing.startTime
+    if (offset >= playing.duration) offset = 0
+  }
+  let samples = resolvePlayback(audio, clicks)
+  play(samples, btn, offset || undefined)
+  playing._audio = audio
+  playing._clicks = clicks
+}
+
+// ── waveform drawing ──────────────────────
+function drawWave(canvas, samples, color) {
+  let dpr = window.devicePixelRatio || 1
+  let w = canvas.clientWidth, h = canvas.clientHeight
+  canvas.width = w * dpr; canvas.height = h * dpr
+  let ctx = canvas.getContext('2d')
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, w, h)
+
+  let mid = h / 2
+  let peak = 1e-6
+  for (let i = 0; i < samples.length; i++) peak = Math.max(peak, Math.abs(samples[i]))
+  let scale = (h * 0.42) / peak
+  let step = samples.length / Math.max(1, w)
+
+  ctx.strokeStyle = color || getComputedStyle(canvas).getPropertyValue('--wave-color')?.trim() || '#9a9488'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  for (let x = 0; x < w; x++) {
+    let i0 = Math.floor(x * step)
+    let i1 = Math.max(i0 + 1, Math.floor((x + 1) * step))
+    let min = 1, max = -1
+    for (let i = i0; i < i1 && i < samples.length; i++) {
+      let s = samples[i]
+      if (s < min) min = s
+      if (s > max) max = s
+    }
+    ctx.moveTo(x + 0.5, mid + min * scale)
+    ctx.lineTo(x + 0.5, mid + max * scale)
+  }
+  ctx.stroke()
+
+  // center line
+  let lineColor = getComputedStyle(document.documentElement).getPropertyValue('--line')?.trim() || '#bdb7aa'
+  ctx.strokeStyle = lineColor
+  ctx.beginPath()
+  ctx.moveTo(0, mid + 0.5)
+  ctx.lineTo(w, mid + 0.5)
+  ctx.stroke()
+}
+
+/** Draw beat markers over waveform. */
+function drawBeats(container, beats, duration) {
+  container.innerHTML = ''
+  if (!beats.length) return
+  for (let i = 0; i < beats.length; i++) {
+    let bar = document.createElement('div')
+    bar.className = 'beat-bar' + (i % 4 === 0 ? ' downbeat' : '')
+    bar.style.left = `${(beats[i] / duration) * 100}%`
+    container.appendChild(bar)
+  }
+}
+
+// ── UI helpers ────────────────────────────
+function playSvg() { return '<svg viewBox="0 0 12 12"><polygon points="2,0 12,6 2,12"/></svg>' }
+
+function confClass(c) {
+  if (c >= 0.5) return 'good'
+  if (c >= 0.1) return 'warn'
+  return 'bad'
+}
+
+function formatBpm(bpm) {
+  return bpm > 0 ? `${bpm.toFixed(1)} BPM` : '—'
+}
+
+function formatConf(c) {
+  return `${(c * 100).toFixed(0)}%`
+}
+
+function formatMs(ms) {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`
+}
+
+// ── build grid ────────────────────────────
+const grid = document.getElementById('grid')
+const benchbar = document.getElementById('benchbar')
+const status = document.getElementById('status')
+
+// Grid: Row 1 = onset detection, Row 2 = tempo/beat
+const COLS = ['Source', 'Spectral Flux', 'Energy Flux', 'Phase Deviation', 'Multi-Band']
+const COLS2 = ['', 'Autocorrelation', 'Comb Filter', 'Full Pipeline', 'DP Tracker']
+
+function buildGrid() {
+  grid.innerHTML = ''
+  // column headers: algorithm names
+  for (let c of COLS) grid.innerHTML += `<div class="grid-hdr section">${c}</div>`
+
+  // row 1: source + onset algorithms
+  grid.innerHTML += `<div class="algo-label" id="src-label">Waveform<span class="tag">input</span></div>`
+  grid.innerHTML += `<div class="cell" id="cell-ons"><div class="cell loading"></div></div>`
+  grid.innerHTML += `<div class="cell" id="cell-eons"><div class="cell loading"></div></div>`
+  grid.innerHTML += `<div class="cell" id="cell-pons"><div class="cell loading"></div></div>`
+  grid.innerHTML += `<div class="cell" id="cell-bons"><div class="cell loading"></div></div>`
+
+  // column headers: tempo/beat algorithm names
+  for (let c of COLS2) grid.innerHTML += `<div class="grid-hdr section">${c}</div>`
+
+  // row 2: tempo/beat algorithms
+  grid.innerHTML += `<div class="algo-label">Tracking<span class="tag">output</span></div>`
+  grid.innerHTML += `<div class="cell" id="cell-tmp"><div class="cell loading"></div></div>`
+  grid.innerHTML += `<div class="cell" id="cell-ctmp"><div class="cell loading"></div></div>`
+  grid.innerHTML += `<div class="cell" id="cell-det"><div class="cell loading"></div></div>`
+  grid.innerHTML += `<div class="cell" id="cell-bt"><div class="cell loading"></div></div>`
+}
+
+function updateBench(samples, runs) {
+  let dur = `${(samples.length / SR).toFixed(2)}s source`
+  let totalMs = runs.reduce((s, r) => s + r.ms, 0)
+  let sorted = [...runs].sort((a, b) => a.ms - b.ms)
+  let fastest = sorted[0]
+  let slowest = sorted[sorted.length - 1]
+
+  benchbar.innerHTML = [
+    `<div class="bench-card"><label>Source</label><strong>${dur}</strong><span>${(samples.length / 1000).toFixed(0)}k samples · ${SR} Hz</span></div>`,
+    `<div class="bench-card"><label>Total time</label><strong>${formatMs(totalMs)}</strong><span>${runs.length} algorithm runs</span></div>`,
+    `<div class="bench-card"><label>Fastest → Slowest</label><strong>${fastest ? fastest.name : '—'} → ${slowest ? slowest.name : '—'}</strong><span>${fastest ? formatMs(fastest.ms) : '—'} → ${slowest ? formatMs(slowest.ms) : '—'}</span></div>`,
+  ].join('')
+}
+
+// ── run analysis ──────────────────────────
+
+function makeClicks(positions, len, accent4 = false) {
+  let d = new Float32Array(len)
+  for (let i = 0; i < positions.length; i++) {
+    let idx = Math.floor(positions[i] * SR)
+    let amp = accent4 && i % 4 === 0 ? 0.8 : 0.4
+    let decay = accent4 ? 12 : 8
+    for (let j = 0; j < 80 && idx + j < len; j++)
+      d[idx + j] = Math.exp(-j / decay) * (j % 2 ? -amp : amp)
+  }
+  return d
+}
+
+/** Render an onset-detection cell: play button + waveform + beat markers */
+function renderOnsetCell(cellId, positions, ms, samples, duration) {
+  let cell = document.getElementById(cellId)
+  cell.classList.remove('loading')
+  cell.innerHTML = ''
+
+  let btn = document.createElement('button')
+  btn.className = 'play-btn'
+  btn.innerHTML = playSvg()
+  let clicks = makeClicks(positions, samples.length)
+  btn.onclick = () => playMixed(samples, clicks, btn)
+
+  let cv = document.createElement('canvas')
+  cv.className = 'wave-canvas'
+
+  let info = document.createElement('span')
+  info.className = 'metric good'
+  info.innerHTML = `<b>${positions.length} onsets</b> · ${formatMs(ms)}`
+
+  let row = document.createElement('div')
+  row.className = 'cell-actions'
+  row.appendChild(btn)
+  row.appendChild(info)
+  cell.appendChild(row)
+  cell.appendChild(cv)
+  requestAnimationFrame(() => {
+    drawWave(cv, samples)
+    let overlay = document.createElement('div')
+    overlay.className = 'beat-overlay'
+    drawBeats(overlay, positions, duration)
+    cell.appendChild(overlay)
+  })
+}
+
+/** Render a tempo cell: BPM + waveform w/ beat pulse markers */
+function renderTempoCell(cellId, result, ms, samples, duration) {
+  let cell = document.getElementById(cellId)
+  cell.classList.remove('loading')
+  cell.innerHTML = ''
+
+  // generate beat positions from estimated BPM
+  let beats = []
+  if (result.bpm > 0) {
+    let interval = 60 / result.bpm
+    for (let t = 0; t < duration; t += interval) beats.push(t)
+  }
+
+  let btn = document.createElement('button')
+  btn.className = 'play-btn'
+  btn.innerHTML = playSvg()
+  let clicks = beats.length ? makeClicks(beats, samples.length, true) : new Float32Array(samples.length)
+  btn.onclick = () => playMixed(samples, clicks, btn)
+
+  let cv = document.createElement('canvas')
+  cv.className = 'wave-canvas'
+
+  let cls = result.confidence >= 0.3 ? 'good' : result.confidence >= 0.1 ? 'warn' : 'bad'
+  let info = document.createElement('span')
+  info.className = `metric ${cls}`
+  info.innerHTML = `<b>${formatBpm(result.bpm)}</b> · ${formatConf(result.confidence)} · ${formatMs(ms)}`
+
+  let row = document.createElement('div')
+  row.className = 'cell-actions'
+  row.appendChild(btn)
+  row.appendChild(info)
+  cell.appendChild(row)
+  cell.appendChild(cv)
+  requestAnimationFrame(() => {
+    drawWave(cv, samples)
+    if (beats.length) {
+      let overlay = document.createElement('div')
+      overlay.className = 'beat-overlay'
+      drawBeats(overlay, beats, duration)
+      cell.appendChild(overlay)
+    }
+  })
+}
+
+/** Render a beat-tracking cell: play button + waveform + beat markers + BPM */
+function renderBeatCell(cellId, beats, bpm, confidence, ms, samples, duration) {
+  let cell = document.getElementById(cellId)
+  cell.classList.remove('loading')
+  cell.innerHTML = ''
+
+  let btn = document.createElement('button')
+  btn.className = 'play-btn'
+  btn.innerHTML = playSvg()
+  let clicks = makeClicks(beats, samples.length, true)
+  btn.onclick = () => playMixed(samples, clicks, btn)
+
+  let cv = document.createElement('canvas')
+  cv.className = 'wave-canvas'
+
+  let cls = confidence >= 0.3 ? 'good' : confidence >= 0.1 ? 'warn' : 'bad'
+  let info = document.createElement('span')
+  info.className = `metric ${cls}`
+  info.innerHTML = `<b>${formatBpm(bpm)}</b> · ${beats.length} beats · ${formatMs(ms)}`
+
+  let row = document.createElement('div')
+  row.className = 'cell-actions'
+  row.appendChild(btn)
+  row.appendChild(info)
+  cell.appendChild(row)
+  cell.appendChild(cv)
+  requestAnimationFrame(() => {
+    drawWave(cv, samples)
+    let overlay = document.createElement('div')
+    overlay.className = 'beat-overlay'
+    drawBeats(overlay, beats, duration)
+    cell.appendChild(overlay)
+  })
+}
+
+async function runSource(srcKey) {
+  status.textContent = srcKey === 'voice' ? 'Loading audio…' : 'Generating…'
+  status.className = 'busy'
+  buildGrid()
+
+  for (let id of ['cell-ons', 'cell-eons', 'cell-pons', 'cell-bons', 'cell-tmp', 'cell-ctmp', 'cell-det', 'cell-bt'])
+    document.getElementById(id)?.classList.add('loading')
+
+  await new Promise(r => setTimeout(r, 30))
+
+  let samples
+  if (srcKey === 'rock') samples = rock(120, 4, SR)
+  else if (srcKey === 'funk') samples = funk(90, 4, SR)
+  else if (srcKey === 'ballad') samples = ballad(60, 4, SR)
+  else if (srcKey === 'breakbeat') samples = breakbeat(100, 4, SR)
+  else if (srcKey === 'edm') samples = edm(128, 4, SR)
+  else if (srcKey === 'hiphop') samples = hiphop(90, 4, SR)
+  else if (srcKey === 'disco') samples = disco(120, 4, SR)
+  else if (srcKey === 'jazz') samples = jazz(140, 4, SR)
+  else if (srcKey === 'reggae') samples = reggae(80, 4, SR)
+  else samples = await loadLena()
+
+  let duration = samples.length / SR
+  let runs = []
+  updateBench(samples, runs)
+
+  // ── source waveform ──
+  let srcLabel = document.getElementById('src-label')
+  srcLabel.innerHTML = `${srcKey}<span class="tag">${(samples.length / 1000).toFixed(0)}k samples</span>`
+  let srcCell = srcLabel.nextElementSibling
+  srcCell.classList.remove('loading')
+  srcCell.innerHTML = ''
+  let srcRow = document.createElement('div')
+  srcRow.className = 'cell-actions'
+  let srcBtn = document.createElement('button')
+  srcBtn.className = 'play-btn'
+  srcBtn.innerHTML = playSvg()
+  srcBtn.onclick = () => play(samples, srcBtn)
+  let srcCv = document.createElement('canvas')
+  srcCv.className = 'wave-canvas'
+  srcRow.appendChild(srcBtn)
+  srcRow.appendChild(srcCv)
+  srcCell.appendChild(srcRow)
+  requestAnimationFrame(() => drawWave(srcCv, samples, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()))
+
+  // ── spectral flux onsets ──
+  status.textContent = 'Detecting onsets…'
+  await new Promise(r => setTimeout(r, 5))
+
+  let t0 = performance.now()
+  let ons = onsets(samples, { fs: SR })
+  runs.push({ name: 'spectral flux', ms: performance.now() - t0 })
+  renderOnsetCell('cell-ons', ons, runs[runs.length - 1].ms, samples, duration)
+
+  // ── energy onsets ──
+  t0 = performance.now()
+  let eons = energyOnsets(samples, { fs: SR })
+  runs.push({ name: 'energy flux', ms: performance.now() - t0 })
+  renderOnsetCell('cell-eons', eons, runs[runs.length - 1].ms, samples, duration)
+
+  // ── phase onsets ──
+  t0 = performance.now()
+  let pons = phaseOnsets(samples, { fs: SR })
+  runs.push({ name: 'phase deviation', ms: performance.now() - t0 })
+  renderOnsetCell('cell-pons', pons, runs[runs.length - 1].ms, samples, duration)
+
+  // ── multi-band onsets ──
+  t0 = performance.now()
+  let bons = bandOnsets(samples, { fs: SR })
+  runs.push({ name: 'multi-band', ms: performance.now() - t0 })
+  renderOnsetCell('cell-bons', bons, runs[runs.length - 1].ms, samples, duration)
+
+  // ── autocorrelation tempo ──
+  status.textContent = 'Estimating tempo…'
+  await new Promise(r => setTimeout(r, 5))
+
+  t0 = performance.now()
+  let tmp = tempo(samples, { fs: SR })
+  runs.push({ name: 'autocorrelation', ms: performance.now() - t0 })
+  renderTempoCell('cell-tmp', tmp, runs[runs.length - 1].ms, samples, duration)
+
+  // ── comb-filter tempo ──
+  t0 = performance.now()
+  let ctmp = combTempo(samples, { fs: SR })
+  runs.push({ name: 'comb filter', ms: performance.now() - t0 })
+  renderTempoCell('cell-ctmp', ctmp, runs[runs.length - 1].ms, samples, duration)
+
+  // ── full pipeline (detect) ──
+  status.textContent = 'Running full pipeline…'
+  await new Promise(r => setTimeout(r, 5))
+
+  t0 = performance.now()
+  let det = detect(samples, { fs: SR })
+  runs.push({ name: 'pipeline', ms: performance.now() - t0 })
+  renderBeatCell('cell-det', det.beats, det.bpm, det.confidence, runs[runs.length - 1].ms, samples, duration)
+
+  // ── DP beat tracker ──
+  t0 = performance.now()
+  let bt = beatTrack(samples, { fs: SR })
+  runs.push({ name: 'DP tracker', ms: performance.now() - t0 })
+  renderBeatCell('cell-bt', bt.beats, bt.bpm, bt.confidence, runs[runs.length - 1].ms, samples, duration)
+
+  updateBench(samples, runs)
+  status.textContent = `${runs.length} algorithms · ${formatMs(runs.reduce((s, r) => s + r.ms, 0))} total`
+  status.className = ''
+}
+
+// ── source buttons ────────────────────────
+document.querySelectorAll('.source-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    if (playing) { playing.src.stop(); playing.btn.classList.remove('playing'); playing = null }
+    runSource(btn.dataset.src)
+  }
+})
+
+buildGrid()
+runSource('rock')
+</script>
+</body>
+</html>
