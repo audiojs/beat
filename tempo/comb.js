@@ -1,12 +1,27 @@
-// Tempo estimation via comb-filter resonance.
-// Tests BPM hypotheses by summing ODF energy at pulse-train positions.
-// Returns top BPM and optional tempo candidates with confidences.
-// Ref: Scheirer, "Tempo and Beat Analysis of Acoustic Musical Signals" (JASA 1998)
+/**
+ * Tempo estimation via comb-filter resonance.
+ * Tests BPM hypotheses by summing ODF energy at pulse-train positions with harmonics.
+ * @param {Float32Array|Float64Array} data - Audio samples (mono)
+ * @param {Object} [opts]
+ * @param {number} [opts.fs=44100] - Sample rate
+ * @param {number} [opts.frameSize=2048] - STFT frame size
+ * @param {number} [opts.hopSize=512] - STFT hop size
+ * @param {number} [opts.minBpm=60] - Minimum BPM to consider
+ * @param {number} [opts.maxBpm=200] - Maximum BPM to consider
+ * @param {number} [opts.candidates=1] - Number of tempo candidates to return
+ * @returns {{ bpm: number, confidence: number, candidates?: Array }} Tempo result
+ * @see Scheirer, "Tempo and Beat Analysis of Acoustic Musical Signals" (JASA 1998)
+ */
 
-import { spectralFlux } from './util.js'
+import { spectralFlux } from '../util.js'
 
 export default function combTempo(data, opts) {
-  let { odf, nFrames, hopSize, fs } = spectralFlux(data, opts)
+  let odf, nFrames, hopSize, fs
+  if (opts?._odf) {
+    ;({ odf, nFrames, hopSize, fs } = opts._odf)
+  } else {
+    ;({ odf, nFrames, hopSize, fs } = spectralFlux(data, opts))
+  }
   if (nFrames < 2) return { bpm: 0, confidence: 0 }
 
   let minBpm = opts?.minBpm || 60
@@ -53,13 +68,15 @@ export default function combTempo(data, opts) {
   // sort by confidence descending
   scores.sort((a, b) => b.confidence - a.confidence)
 
-  // suppress octave duplicates
+  // suppress octave duplicates (including half/double tempo)
   let filtered = []
   for (let s of scores) {
     let dup = false
     for (let f of filtered) {
       let ratio = s.bpm / f.bpm
       if (ratio > 0.95 && ratio < 1.05) { dup = true; break }
+      if (ratio > 1.95 && ratio < 2.05) { dup = true; break }
+      if (ratio > 0.45 && ratio < 0.55) { dup = true; break }
     }
     if (!dup) filtered.push(s)
     if (filtered.length >= topN) break

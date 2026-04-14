@@ -1,19 +1,28 @@
 import test, { almost, ok, is } from 'tst'
 import { detect, onsets, energyOnsets, phaseOnsets, bandOnsets, tempo, combTempo, beatTrack, spectralFlux, energyFlux } from './index.js'
-import { fmKick, fmSnare, fmHihat, bassNote, mixHits, edm as edmBeat, hiphop as hiphopBeat, disco as discoBeat, jazz as jazzSwing, reggae as reggaeBeat } from './synth.js'
+import { fmKick, fmSnare, fmHihat, bassNote, mixHits, edm as edmBeat, hiphop as hiphopBeat, disco as discoBeat, jazz as jazzSwing, reggae as reggaeBeat, rock as rockFn, funk as funkFn, ballad as balladFn, breakbeat as breakbeatFn } from './synth.js'
+import { renderFloatbeat, sanxion } from './floatbeats.js'
 
 let fs = 44100
 
-/** Check if BPM matches expected value or its octave (half/double) */
+/** Check if BPM matches expected value within tolerance.
+ * Reports octave errors (half/double) explicitly — they pass but are flagged. */
 function nearBpm(actual, expected, tol) {
-  ok(
-    Math.abs(actual - expected) <= tol ||
-    Math.abs(actual - expected * 2) <= tol ||
-    Math.abs(actual - expected / 2) <= tol ||
-    Math.abs(actual - expected * 1.5) <= tol ||
-    Math.abs(actual - expected * 3) <= tol,
-    `${actual} near ${expected} ±${tol} (or octave)`
-  )
+  if (Math.abs(actual - expected) <= tol) {
+    ok(true, `${actual.toFixed(1)} ≈ ${expected} ±${tol}`)
+    return
+  }
+  // detect octave error: half or double tempo
+  if (Math.abs(actual - expected * 2) <= tol) {
+    ok(true, `${actual.toFixed(1)} ≈ ${expected}×2 (octave double — known limitation)`)
+    return
+  }
+  if (Math.abs(actual - expected / 2) <= tol) {
+    ok(true, `${actual.toFixed(1)} ≈ ${expected}/2 (octave half — known limitation)`)
+    return
+  }
+  // anything else is a real failure
+  ok(false, `${actual.toFixed(1)} not near ${expected} ±${tol}`)
 }
 
 // ═══════════════════════════════════════════
@@ -776,4 +785,98 @@ test('detect — real voice (audio-lena)', async () => {
   let result = detect(samples, { fs })
   ok(result.onsets.length >= 2, 'pipeline detects voice onsets')
   ok(result.beats.length >= 0, 'pipeline produces output')
+})
+
+// ═══════════════════════════════════════════
+// Real music track (deterministic, no downloads)
+// ═══════════════════════════════════════════
+// Dollchan floatbeat — ground-truth BPM declared in the formula itself.
+test(`detect — real music (floatbeat ${sanxion.name.toLowerCase()}, ${sanxion.bpm} BPM)`, () => {
+  let samples = renderFloatbeat(sanxion.code, sanxion.sampleRate, 10)
+  ok(samples.length === sanxion.sampleRate * 10, 'rendered 10s of audio')
+  let peak = 0
+  for (let i = 0; i < samples.length; i++) if (Math.abs(samples[i]) > peak) peak = Math.abs(samples[i])
+  ok(peak > 0.01, 'renders non-silent signal (peak ' + peak.toFixed(3) + ')')
+
+  let result = detect(samples, { fs: sanxion.sampleRate })
+  ok(result.bpm > 0, 'detects tempo on real track')
+  ok(result.beats.length > 0, 'produces beat grid')
+  ok(result.onsets.length >= 8, 'finds onsets (' + result.onsets.length + ')')
+  nearBpm(result.bpm, sanxion.bpm, 10)
+})
+
+// ═══════════════════════════════════════════
+// Accuracy benchmark — systematic validation
+// ═══════════════════════════════════════════
+// Tests all styles × BPM ranges × algorithms.
+// Reports: accuracy1 (exact ±5%), accuracy2 (octave-tolerant ±5%),
+// mean absolute error, and octave error rate.
+
+test('accuracy benchmark — tempo estimation', () => {
+  let generators = [
+    { name: 'clicks', fn: (bpm) => clicks(bpm, 8) },
+    { name: 'rock', fn: (bpm) => rockFn(bpm, 4) },
+    { name: 'edm', fn: (bpm) => edmBeat(bpm, 4) },
+    { name: 'hiphop', fn: (bpm) => hiphopBeat(bpm, 4) },
+    { name: 'disco', fn: (bpm) => discoBeat(bpm, 4) },
+    { name: 'jazz', fn: (bpm) => jazzSwing(bpm, 4) },
+    { name: 'reggae', fn: (bpm) => reggaeBeat(bpm, 4) },
+    { name: 'funk', fn: (bpm) => funkFn(bpm, 4) },
+    { name: 'ballad', fn: (bpm) => balladFn(bpm, 4) },
+    { name: 'breakbeat', fn: (bpm) => breakbeatFn(bpm, 4) },
+  ]
+  let bpms = [70, 80, 90, 100, 110, 120, 130, 140, 160, 180]
+  let methods = [
+    { name: 'tempo', fn: (d) => tempo(d, { fs }).bpm },
+    { name: 'combTempo', fn: (d) => combTempo(d, { fs }).bpm },
+    { name: 'detect', fn: (d) => detect(d, { fs }).bpm },
+    { name: 'beatTrack', fn: (d) => beatTrack(d, { fs }).bpm },
+  ]
+
+  let results = []
+  for (let method of methods) {
+    let exact = 0, octave = 0, total = 0, absErr = 0
+    for (let gen of generators) {
+      for (let targetBpm of bpms) {
+        let data = gen.fn(targetBpm)
+        let detected = method.fn(data)
+        total++
+        let err = Math.abs(detected - targetBpm)
+        let errPct = err / targetBpm
+        if (errPct <= 0.05) {
+          exact++; octave++
+        } else {
+          // check octave (half/double)
+          let halfErr = Math.abs(detected - targetBpm / 2) / targetBpm
+          let dblErr = Math.abs(detected - targetBpm * 2) / targetBpm
+          if (halfErr <= 0.05 || dblErr <= 0.05) octave++
+        }
+        absErr += err
+      }
+    }
+    results.push({
+      name: method.name, total,
+      acc1: (exact / total * 100).toFixed(1),
+      acc2: (octave / total * 100).toFixed(1),
+      mae: (absErr / total).toFixed(1),
+      octaveErrors: octave - exact
+    })
+  }
+
+  // print results table
+  console.log('\n  ┌─────────────────────────────────────────────────────────┐')
+  console.log('  │  Accuracy Benchmark: ' + generators.length + ' styles × ' + bpms.length + ' BPMs = ' + (generators.length * bpms.length) + ' cases per method  │')
+  console.log('  ├────────────┬─────────┬──────────┬────────┬─────────────┤')
+  console.log('  │ Method     │ Acc1(%) │ Acc2(%)  │ MAE    │ Octave errs │')
+  console.log('  ├────────────┼─────────┼──────────┼────────┼─────────────┤')
+  for (let r of results) {
+    console.log('  │ ' + r.name.padEnd(10) + ' │ ' + r.acc1.padStart(5) + '   │ ' + r.acc2.padStart(6) + '   │ ' + r.mae.padStart(4) + '   │ ' + String(r.octaveErrors).padStart(8) + '    │')
+  }
+  console.log('  └────────────┴─────────┴──────────┴────────┴─────────────┘')
+  console.log('  Acc1 = exact ±5%. Acc2 = octave-tolerant ±5%. MAE = mean absolute BPM error.\n')
+
+  // assert minimum quality bar
+  let best = results[0] // tempo method
+  ok(+best.acc1 >= 60, 'tempo accuracy1 ≥ 60%: ' + best.acc1 + '%')
+  ok(+best.acc2 >= 80, 'tempo accuracy2 ≥ 80%: ' + best.acc2 + '%')
 })

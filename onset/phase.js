@@ -1,11 +1,21 @@
-// Complex-domain onset detection (phase deviation).
-// Measures divergence between predicted and actual STFT phase.
-// More robust to steady-state signals than spectral flux.
-// Ref: Bello et al., "A Tutorial on Onset Detection in Music Signals" (TASLP 2005)
+/**
+ * Complex-domain onset detection (phase deviation).
+ * Measures divergence between predicted and actual STFT phase.
+ * More robust to steady-state signals than spectral flux.
+ * @param {Float32Array|Float64Array} data - Audio samples (mono)
+ * @param {Object} [opts]
+ * @param {number} [opts.fs=44100] - Sample rate
+ * @param {number} [opts.frameSize=2048] - STFT frame size
+ * @param {number} [opts.hopSize=512] - STFT hop size
+ * @param {number} [opts.delta=1.4] - Peak-pick threshold multiplier
+ * @param {number} [opts.windowSize=8] - Peak-pick local mean window (frames)
+ * @returns {Float64Array} Onset times in seconds
+ * @see Bello et al., "A Tutorial on Onset Detection in Music Signals" (TASLP 2005)
+ */
 
 import { cfft } from 'fourier-transform'
 import { hann } from 'window-function'
-import { peakPick } from './util.js'
+import { peakPick } from '../util.js'
 
 export default function phaseOnsets(data, opts) {
   let fs = opts?.fs || 44100

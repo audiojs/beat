@@ -3,9 +3,16 @@
 import fft from 'fourier-transform'
 import { hann } from 'window-function'
 
-/** Compute spectral flux onset detection function (ODF).
+/**
+ * Compute spectral flux onset detection function (ODF).
  * STFT → magnitude → sum positive differences.
- * Returns { odf, nFrames, hopSize, frameSize, fs }. */
+ * @param {Float32Array|Float64Array} data - Audio samples (mono)
+ * @param {Object} [opts]
+ * @param {number} [opts.fs=44100] - Sample rate
+ * @param {number} [opts.frameSize=2048] - FFT frame size
+ * @param {number} [opts.hopSize=512] - Hop size between frames
+ * @returns {{ odf: Float64Array, nFrames: number, hopSize: number, frameSize: number, fs: number }}
+ */
 export function spectralFlux(data, opts) {
   let fs = opts?.fs || 44100
   let frameSize = opts?.frameSize || 2048
@@ -44,7 +51,16 @@ export function spectralFlux(data, opts) {
   return { odf, nFrames, hopSize, frameSize, fs }
 }
 
-/** Peak-pick ODF with adaptive threshold (local mean + delta). Returns onset times in seconds. */
+/**
+ * Peak-pick ODF with adaptive threshold (local mean × delta).
+ * @param {Float64Array} odf - Onset detection function values
+ * @param {Object} [opts]
+ * @param {number} [opts.hopSize=512] - Hop size (for time conversion)
+ * @param {number} [opts.fs=44100] - Sample rate (for time conversion)
+ * @param {number} [opts.windowSize=8] - Local mean window size (frames)
+ * @param {number} [opts.delta=1.4] - Threshold multiplier over local mean
+ * @returns {Float64Array} Onset times in seconds
+ */
 export function peakPick(odf, opts) {
   let windowSize = opts?.windowSize || 8
   let delta = opts?.delta || 1.4
@@ -77,9 +93,17 @@ export function peakPick(odf, opts) {
   return new Float64Array(onsets)
 }
 
-/** Energy-based onset detection function.
+/**
+ * Energy-based onset detection function.
  * Computes RMS energy per frame, returns positive first differences.
- * Ref: Klapuri, "Auditory Model Based Beat Tracking" (ICMC 1999) */
+ * @param {Float32Array|Float64Array} data - Audio samples (mono)
+ * @param {Object} [opts]
+ * @param {number} [opts.fs=44100] - Sample rate
+ * @param {number} [opts.frameSize=2048] - Frame size
+ * @param {number} [opts.hopSize=512] - Hop size between frames
+ * @returns {{ odf: Float64Array, nFrames: number, hopSize: number, frameSize: number, fs: number }}
+ * @see Klapuri, "Auditory Model Based Beat Tracking" (ICMC 1999)
+ */
 export function energyFlux(data, opts) {
   let fs = opts?.fs || 44100
   let frameSize = opts?.frameSize || 2048

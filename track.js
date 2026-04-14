@@ -1,43 +1,61 @@
-// Dynamic programming beat tracker.
-// Builds optimal beat sequence by scoring onset strength + tempo consistency.
-// Ref: Ellis, "Beat Tracking by Dynamic Programming" (JNMR 2007)
+/**
+ * Dynamic programming beat tracker.
+ * Builds optimal beat sequence by scoring onset strength + tempo consistency.
+ * @param {Float32Array|Float64Array} data - Audio samples (mono)
+ * @param {Object} [opts]
+ * @param {number} [opts.fs=44100] - Sample rate
+ * @param {number} [opts.frameSize=2048] - STFT frame size
+ * @param {number} [opts.hopSize=512] - STFT hop size
+ * @param {number} [opts.minBpm=60] - Minimum BPM to consider
+ * @param {number} [opts.maxBpm=200] - Maximum BPM to consider
+ * @param {number} [opts.bpm] - Target BPM (auto-estimated if omitted)
+ * @param {number} [opts.tightness=680] - Tempo constraint weight
+ * @returns {{ beats: Float64Array, bpm: number, confidence: number }}
+ * @see Ellis, "Beat Tracking by Dynamic Programming" (JNMR 2007)
+ */
 
 import { spectralFlux } from './util.js'
-import tempo from './tempo.js'
+import combTempo from './tempo/comb.js'
 
 export default function beatTrack(data, opts) {
   let fs = opts?.fs || 44100
-  let { odf, nFrames, hopSize } = spectralFlux(data, opts)
+  let sf = spectralFlux(data, opts)
+  let { odf, nFrames, hopSize } = sf
   if (nFrames < 2) return { beats: new Float64Array(0), bpm: 0, confidence: 0 }
 
-  let minBpm = opts?.minBpm || 60
-  let maxBpm = opts?.maxBpm || 200
   let odfRate = fs / hopSize
 
-  // tempo penalty: negative log-Gaussian around target tempo
-  // auto-estimate if not provided, reuse ODF to avoid recomputing STFT
-  let targetBpm = opts?.bpm || tempo(data, { ...opts, _odf: { odf, nFrames, hopSize, fs } }).bpm || 120
+  // reuse STFT via _odf cache — same trick detect() uses
+  let targetBpm = opts?.bpm || combTempo(data, { ...opts, _odf: sf }).bpm || 120
   let targetPeriod = odfRate * 60 / targetBpm
-  let sigma = targetPeriod * 0.2
 
-  // DP: score[i] = best cumulative score ending at frame i
+  // normalize ODF: zero-mean, unit-std — makes Ellis's tightness weight meaningful
+  let mean = 0
+  for (let i = 0; i < nFrames; i++) mean += odf[i]
+  mean /= nFrames
+  let variance = 0
+  for (let i = 0; i < nFrames; i++) { let d = odf[i] - mean; variance += d * d }
+  let std = Math.sqrt(variance / nFrames) || 1
+  let odfN = new Float64Array(nFrames)
+  for (let i = 0; i < nFrames; i++) odfN[i] = (odf[i] - mean) / std
+
+  // DP forward: C[i] = max over valid j of ( C[j] + odfN[i] - α·log(gap/p)² )
+  // log-ratio penalty gives octave symmetry — gap=2p and gap=p/2 cost the same,
+  // and the penalty is sharp enough to pin DP to the target period.
+  let alpha = opts?.tightness ?? 680
   let score = new Float64Array(nFrames)
   let prev = new Int32Array(nFrames).fill(-1)
+  for (let i = 0; i < nFrames; i++) score[i] = odfN[i]
 
-  // initialize: first onset frame can start a beat
-  for (let i = 0; i < nFrames; i++) score[i] = odf[i]
+  let minGap = Math.max(1, Math.floor(targetPeriod * 0.5))
+  let maxGap = Math.ceil(targetPeriod * 2)
 
   for (let i = 1; i < nFrames; i++) {
-    let minGap = Math.floor(odfRate * 60 / maxBpm)
-    let maxGap = Math.ceil(odfRate * 60 / minBpm)
     let lo = Math.max(0, i - maxGap)
     let hi = Math.max(0, i - minGap)
-
     for (let j = lo; j < hi; j++) {
-      let gap = i - j
-      // tempo deviation penalty
-      let penalty = 0.5 * ((gap - targetPeriod) / sigma) ** 2
-      let s = score[j] + odf[i] - penalty
+      let logR = Math.log((i - j) / targetPeriod)
+      let s = score[j] + odfN[i] - alpha * logR * logR
       if (s > score[i]) {
         score[i] = s
         prev[i] = j
@@ -45,31 +63,34 @@ export default function beatTrack(data, opts) {
     }
   }
 
-  // backtrack from best final score
-  let bestEnd = 0
-  for (let i = 1; i < nFrames; i++) {
+  // backtrack from best score in the last targetPeriod frames (ensures we
+  // reach the end of the signal rather than stopping at a mid-sequence peak)
+  let endLo = Math.max(0, nFrames - Math.floor(targetPeriod))
+  let bestEnd = endLo
+  for (let i = endLo + 1; i < nFrames; i++) {
     if (score[i] > score[bestEnd]) bestEnd = i
   }
 
   let frames = []
-  let cur = bestEnd
-  while (cur >= 0) {
-    frames.push(cur)
-    cur = prev[cur]
-  }
+  for (let cur = bestEnd; cur >= 0; cur = prev[cur]) frames.push(cur)
   frames.reverse()
 
-  let beats = new Float64Array(frames.map(f => f * hopSize / fs))
+  let beatIntervalSec = targetPeriod * hopSize / fs
+  let beatTimes = frames.map(f => f * hopSize / fs)
 
-  // estimate BPM from median interval
-  let bpm = 0, confidence = 0
+  // extrapolate backward: DP anchors where onset strength is highest, not at t=0.
+  // walk back by beatIntervalSec, snapping beats within half a period of t=0 to t=0.
+  if (beatTimes.length > 0 && beatTimes[0] > beatIntervalSec * 0.25) {
+    let extra = []
+    for (let t = beatTimes[0] - beatIntervalSec; t > -beatIntervalSec * 0.5; t -= beatIntervalSec)
+      extra.unshift(Math.max(0, t))
+    beatTimes = [...extra, ...beatTimes]
+  }
+
+  let beats = new Float64Array(beatTimes)
+
+  let confidence = 0
   if (beats.length >= 2) {
-    let intervals = []
-    for (let i = 1; i < beats.length; i++) intervals.push(beats[i] - beats[i - 1])
-    intervals.sort((a, b) => a - b)
-    let median = intervals[intervals.length >> 1]
-    bpm = 60 / median
-    // confidence: ratio of on-beat ODF energy to total
     let beatSet = new Set(frames)
     let onBeat = 0, total = 0
     for (let i = 0; i < nFrames; i++) {
@@ -79,5 +100,5 @@ export default function beatTrack(data, opts) {
     confidence = total > 0 ? onBeat / total : 0
   }
 
-  return { beats, bpm, confidence }
+  return { beats, bpm: targetBpm, confidence }
 }

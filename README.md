@@ -1,6 +1,6 @@
 # beat-detection [![test](https://github.com/audiojs/beat-detection/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/beat-detection/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/beat-detection)](https://www.npmjs.com/package/beat-detection) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Onset detection, tempo estimation, and beat tracking.
+Onset detection, tempo estimation, and beat tracking. &nbsp;·&nbsp; **[live demo ↗](https://audiojs.github.io/beat-detection/)**
 
 <table><tr><td valign="top">
 
@@ -211,7 +211,7 @@ Same params as `tempo`.
 
 ### `detect(data, opts)`
 
-Full pipeline: spectral flux onsets → autocorrelation tempo → phase-aligned beat grid. Finds the grid phase that best aligns with detected onsets.
+Full pipeline: spectral flux onsets → comb-filter tempo → phase-aligned beat grid. Shares a single STFT pass across onset and tempo stages, so it costs only marginally more than either alone.
 
 ```js
 import { detect } from 'beat-detection'
@@ -286,10 +286,47 @@ All algorithms run 250–8000× faster than real-time on a single core (16.5s si
 | `bandOnsets` | 21 ms | 35 Msamp/s | 790× RT |
 | `combTempo` | 25 ms | 29 Msamp/s | 660× RT |
 | `detect` | 37 ms | 20 Msamp/s | 450× RT |
-| `beatTrack` | 18 ms | 40 Msamp/s | 900× RT |
+| `beatTrack` | 37 ms | 20 Msamp/s | 450× RT |
 | `phaseOnsets` | 63 ms | 12 Msamp/s | 260× RT |
 
 Full 8-algorithm pass on 8.5s audio completes in ~150ms in-browser.
+
+
+## Accuracy
+
+Systematic benchmark across 10 musical styles × 10 tempos (70–180 BPM) = 100 cases per method.
+
+| Method | Acc1 (%) | Acc2 (%) | MAE (BPM) | Octave errors |
+|---|---|---|---|---|
+| `tempo` | 70 | 87 | 20.1 | 17 |
+| `combTempo` | 87 | 93 | 8.7 | 6 |
+| `detect` | 87 | 93 | 8.7 | 6 |
+| `beatTrack` | 87 | 93 | 8.7 | 6 |
+
+`detect`, `beatTrack`, and `combTempo` all share a single STFT pass —
+they're as accurate as each other, and all better than the autocorrelation baseline.
+Use `detect` for uniform grids, `beatTrack` for adaptive (rubato-aware) placement.
+
+- **Acc1** — exact accuracy within ±5% of target BPM
+- **Acc2** — octave-tolerant accuracy (accepts half/double tempo within ±5%)
+- **MAE** — mean absolute BPM error across all cases
+- **Octave errors** — cases correct at octave level but wrong metrical level
+
+### Methodology
+
+Samples are **synthesized** using FM-synthesis drum patterns in `synth.js` (not published, included in the repo for testing). No external audio files or datasets are required — the benchmark is fully self-contained and deterministic.
+
+**Styles tested:** clicks (pure metronome), rock, EDM, hip-hop, disco, jazz (swing), reggae (offbeat skank), funk, ballad, breakbeat. Each style is generated at 10 BPM points: 70, 80, 90, 100, 110, 120, 130, 140, 160, 180.
+
+**Reproducing:** run `node test.js` — the accuracy table prints to console as part of the test suite. No external dependencies beyond `npm install`.
+
+**Real-music sanity test:** the suite also renders a real, deterministic music track — a [floatbeat](https://dollchan.net/bytebeat/) by RealZynx92 (*sanxion loader music*, 125 BPM declared in the formula) — and verifies `detect` recovers 125 BPM exactly. No audio files, no randomness — the tune is generated from a short JavaScript expression.
+
+### Known limitations
+
+- **Syncopated music** (reggae, funk, breakbeat) is hardest — offbeat patterns create strong sub-beat autocorrelation that can double the detected tempo. Octave correction mitigates this for most cases.
+- **Extreme tempos** (<70 or >180 BPM) are outside the default `minBpm`/`maxBpm` range.
+- **Synthetic vs. real audio** — these benchmarks use FM-synthesized patterns, which are cleaner than real recordings. Real-world accuracy may differ due to mix complexity, recording artifacts, and tempo rubato.
 
 
 ## See also

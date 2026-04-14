@@ -177,10 +177,13 @@ h1{font:500 clamp(20px,2.5vw,26px)/1 var(--sans);letter-spacing:0.16em;text-tran
   <button class="source-btn" data-src="disco">Disco 120</button>
   <button class="source-btn" data-src="jazz">Jazz 140</button>
   <button class="source-btn" data-src="reggae">Reggae 80</button>
+  <span style="width:6px"></span>
+  <button class="source-btn" data-src="sanxion">Sanxion 125</button>
+  <button class="source-btn" data-src="stranglehold">Stranglehold 130</button>
   <div class="play-mode" id="playMode">
-    <button data-mode="both" class="active" title="Play source audio mixed with click track">Both</button>
+    <button data-mode="both" title="Play source audio mixed with click track">Both</button>
     <button data-mode="clicks" title="Play click track only">Clicks</button>
-    <button data-mode="audio" title="Play source audio only">Audio</button>
+    <button data-mode="audio" class="active" title="Play source audio only">Audio</button>
   </div>
   <span id="status"></span>
 </div>
@@ -200,26 +203,35 @@ h1{font:500 clamp(20px,2.5vw,26px)/1 var(--sans);letter-spacing:0.16em;text-tran
     "fourier-transform": "https://esm.sh/fourier-transform",
     "window-function": "https://esm.sh/window-function",
     "beat-detection": "./index.js",
-    "beat-detection/synth": "./synth.js"
+    "beat-detection/synth": "./synth.js",
+    "beat-detection/floatbeats": "./floatbeats.js"
   }
 }
 </script>
 <script type="module">
 import { onsets, energyOnsets, phaseOnsets, bandOnsets, tempo, combTempo, detect, beatTrack } from 'beat-detection'
 import { rock, funk, ballad, breakbeat, edm, hiphop, disco, jazz, reggae } from 'beat-detection/synth'
+import { renderFloatbeat, sanxion, stranglehold } from 'beat-detection/floatbeats'
 
 const SR = 44100
+let sourceSR = SR
 const PI2 = Math.PI * 2
 
 // ── playback mode ─────────────────────────
-let playMode = 'both' // 'both' | 'clicks' | 'audio'
+let playMode = 'audio' // 'both' | 'clicks' | 'audio'
 document.querySelectorAll('#playMode button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('#playMode button').forEach(b => b.classList.remove('active'))
     btn.classList.add('active')
     playMode = btn.dataset.mode
-    // re-trigger current playback with new mode
-    if (playing?._audio) playMixed(playing._audio, playing._clicks, playing.btn)
+    // re-trigger mid-playback: seek to current position in new mix
+    if (playing?._audio) {
+      let audio = playing._audio, clicks = playing._clicks, pbtn = playing.btn, sr = playing._sr
+      let offset = actx.currentTime - playing.startTime
+      if (offset >= playing.duration) offset = 0
+      play(resolvePlayback(audio, clicks), pbtn, offset || undefined, sr)
+      if (playing) { playing._audio = audio; playing._clicks = clicks; playing._sr = sr }
+    }
   }
 })
 
@@ -259,33 +271,31 @@ function resolvePlayback(audio, clicks) {
   return mixSamples(audio, clicks)
 }
 
-function play(samples, btn, offset) {
+function play(samples, btn, offset, sr = sourceSR) {
   let ctx = ensureCtx()
   if (playing) { playing.src.stop(); playing.btn.classList.remove('playing'); if (playing.btn === btn && !offset) { playing = null; return } }
   offset = offset || 0
-  let buf = ctx.createBuffer(1, samples.length, SR)
+  let buf = ctx.createBuffer(1, samples.length, sr)
   buf.getChannelData(0).set(samples)
   let src = ctx.createBufferSource()
   src.buffer = buf
   src.connect(ctx.destination)
   src.start(0, offset)
   btn.classList.add('playing')
-  playing = { src, btn, startTime: ctx.currentTime - offset, duration: samples.length / SR }
+  playing = { src, btn, startTime: ctx.currentTime - offset, duration: samples.length / sr }
   src.onended = () => { btn.classList.remove('playing'); if (playing?.src === src) playing = null }
 }
 
-function playMixed(audio, clicks, btn) {
-  let ctx = ensureCtx()
-  let offset = 0
-  // if same button is playing and this is a re-trigger (mode switch), keep position
+function playMixed(audio, clicks, btn, sr = sourceSR) {
+  // stop toggle: same button + same content = stop
   if (playing?.btn === btn && playing?._audio === audio) {
-    offset = actx.currentTime - playing.startTime
-    if (offset >= playing.duration) offset = 0
+    playing.src.stop()
+    playing.btn.classList.remove('playing')
+    playing = null
+    return
   }
-  let samples = resolvePlayback(audio, clicks)
-  play(samples, btn, offset || undefined)
-  playing._audio = audio
-  playing._clicks = clicks
+  play(resolvePlayback(audio, clicks), btn, undefined, sr)
+  if (playing) { playing._audio = audio; playing._clicks = clicks; playing._sr = sr }
 }
 
 // ── waveform drawing ──────────────────────
@@ -395,14 +405,14 @@ function buildGrid() {
 }
 
 function updateBench(samples, runs) {
-  let dur = `${(samples.length / SR).toFixed(2)}s source`
+  let dur = `${(samples.length / sourceSR).toFixed(2)}s source`
   let totalMs = runs.reduce((s, r) => s + r.ms, 0)
   let sorted = [...runs].sort((a, b) => a.ms - b.ms)
   let fastest = sorted[0]
   let slowest = sorted[sorted.length - 1]
 
   benchbar.innerHTML = [
-    `<div class="bench-card"><label>Source</label><strong>${dur}</strong><span>${(samples.length / 1000).toFixed(0)}k samples · ${SR} Hz</span></div>`,
+    `<div class="bench-card"><label>Source</label><strong>${dur}</strong><span>${(samples.length / 1000).toFixed(0)}k samples · ${sourceSR} Hz</span></div>`,
     `<div class="bench-card"><label>Total time</label><strong>${formatMs(totalMs)}</strong><span>${runs.length} algorithm runs</span></div>`,
     `<div class="bench-card"><label>Fastest → Slowest</label><strong>${fastest ? fastest.name : '—'} → ${slowest ? slowest.name : '—'}</strong><span>${fastest ? formatMs(fastest.ms) : '—'} → ${slowest ? formatMs(slowest.ms) : '—'}</span></div>`,
   ].join('')
@@ -413,7 +423,7 @@ function updateBench(samples, runs) {
 function makeClicks(positions, len, accent4 = false) {
   let d = new Float32Array(len)
   for (let i = 0; i < positions.length; i++) {
-    let idx = Math.floor(positions[i] * SR)
+    let idx = Math.floor(positions[i] * sourceSR)
     let amp = accent4 && i % 4 === 0 ? 0.8 : 0.4
     let decay = accent4 ? 12 : 8
     for (let j = 0; j < 80 && idx + j < len; j++)
@@ -535,8 +545,14 @@ function renderBeatCell(cellId, beats, bpm, confidence, ms, samples, duration) {
   })
 }
 
+let runGen = 0
+
 async function runSource(srcKey) {
-  status.textContent = srcKey === 'voice' ? 'Loading audio…' : 'Generating…'
+  const gen = ++runGen
+  const stale = () => gen !== runGen
+
+  let isFloat = srcKey === 'sanxion' || srcKey === 'stranglehold'
+  status.textContent = srcKey === 'voice' ? 'Loading audio…' : isFloat ? 'Rendering floatbeat…' : 'Generating…'
   status.className = 'busy'
   buildGrid()
 
@@ -544,8 +560,9 @@ async function runSource(srcKey) {
     document.getElementById(id)?.classList.add('loading')
 
   await new Promise(r => setTimeout(r, 30))
+  if (stale()) return
 
-  let samples
+  let samples, sr = SR
   if (srcKey === 'rock') samples = rock(120, 4, SR)
   else if (srcKey === 'funk') samples = funk(90, 4, SR)
   else if (srcKey === 'ballad') samples = ballad(60, 4, SR)
@@ -555,15 +572,22 @@ async function runSource(srcKey) {
   else if (srcKey === 'disco') samples = disco(120, 4, SR)
   else if (srcKey === 'jazz') samples = jazz(140, 4, SR)
   else if (srcKey === 'reggae') samples = reggae(80, 4, SR)
+  else if (srcKey === 'sanxion')      { sr = sanxion.sampleRate;      samples = renderFloatbeat(sanxion.code, sr, 8) }
+  else if (srcKey === 'stranglehold') { sr = stranglehold.sampleRate; samples = renderFloatbeat(stranglehold.code, sr, 8) }
   else samples = await loadLena()
+  if (stale()) return
 
-  let duration = samples.length / SR
+  sourceSR = sr
+  let duration = samples.length / sr
   let runs = []
   updateBench(samples, runs)
 
   // ── source waveform ──
   let srcLabel = document.getElementById('src-label')
-  srcLabel.innerHTML = `${srcKey}<span class="tag">${(samples.length / 1000).toFixed(0)}k samples</span>`
+  let labelText = srcKey === 'sanxion' ? sanxion.name
+                : srcKey === 'stranglehold' ? stranglehold.name
+                : srcKey
+  srcLabel.innerHTML = `${labelText}<span class="tag">${(samples.length / 1000).toFixed(0)}k samples</span>`
   let srcCell = srcLabel.nextElementSibling
   srcCell.classList.remove('loading')
   srcCell.innerHTML = ''
@@ -583,57 +607,60 @@ async function runSource(srcKey) {
   // ── spectral flux onsets ──
   status.textContent = 'Detecting onsets…'
   await new Promise(r => setTimeout(r, 5))
+  if (stale()) return
 
   let t0 = performance.now()
-  let ons = onsets(samples, { fs: SR })
+  let ons = onsets(samples, { fs: sr })
   runs.push({ name: 'spectral flux', ms: performance.now() - t0 })
   renderOnsetCell('cell-ons', ons, runs[runs.length - 1].ms, samples, duration)
 
   // ── energy onsets ──
   t0 = performance.now()
-  let eons = energyOnsets(samples, { fs: SR })
+  let eons = energyOnsets(samples, { fs: sr })
   runs.push({ name: 'energy flux', ms: performance.now() - t0 })
   renderOnsetCell('cell-eons', eons, runs[runs.length - 1].ms, samples, duration)
 
   // ── phase onsets ──
   t0 = performance.now()
-  let pons = phaseOnsets(samples, { fs: SR })
+  let pons = phaseOnsets(samples, { fs: sr })
   runs.push({ name: 'phase deviation', ms: performance.now() - t0 })
   renderOnsetCell('cell-pons', pons, runs[runs.length - 1].ms, samples, duration)
 
   // ── multi-band onsets ──
   t0 = performance.now()
-  let bons = bandOnsets(samples, { fs: SR })
+  let bons = bandOnsets(samples, { fs: sr })
   runs.push({ name: 'multi-band', ms: performance.now() - t0 })
   renderOnsetCell('cell-bons', bons, runs[runs.length - 1].ms, samples, duration)
 
   // ── autocorrelation tempo ──
   status.textContent = 'Estimating tempo…'
   await new Promise(r => setTimeout(r, 5))
+  if (stale()) return
 
   t0 = performance.now()
-  let tmp = tempo(samples, { fs: SR })
+  let tmp = tempo(samples, { fs: sr })
   runs.push({ name: 'autocorrelation', ms: performance.now() - t0 })
   renderTempoCell('cell-tmp', tmp, runs[runs.length - 1].ms, samples, duration)
 
   // ── comb-filter tempo ──
   t0 = performance.now()
-  let ctmp = combTempo(samples, { fs: SR })
+  let ctmp = combTempo(samples, { fs: sr })
   runs.push({ name: 'comb filter', ms: performance.now() - t0 })
   renderTempoCell('cell-ctmp', ctmp, runs[runs.length - 1].ms, samples, duration)
 
   // ── full pipeline (detect) ──
   status.textContent = 'Running full pipeline…'
   await new Promise(r => setTimeout(r, 5))
+  if (stale()) return
 
   t0 = performance.now()
-  let det = detect(samples, { fs: SR })
+  let det = detect(samples, { fs: sr })
   runs.push({ name: 'pipeline', ms: performance.now() - t0 })
   renderBeatCell('cell-det', det.beats, det.bpm, det.confidence, runs[runs.length - 1].ms, samples, duration)
 
   // ── DP beat tracker ──
   t0 = performance.now()
-  let bt = beatTrack(samples, { fs: SR })
+  let bt = beatTrack(samples, { fs: sr })
   runs.push({ name: 'DP tracker', ms: performance.now() - t0 })
   renderBeatCell('cell-bt', bt.beats, bt.bpm, bt.confidence, runs[runs.length - 1].ms, samples, duration)
 
