@@ -1,6 +1,6 @@
 {
   "name": "beat-detection",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Beat detection: onset detection, tempo estimation, beat grid",
   "exports": {
