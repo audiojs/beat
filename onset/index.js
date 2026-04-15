@@ -12,9 +12,10 @@
  * @see Dixon, "Onset Detection Revisited" (DAFx 2006)
  */
 
-import { spectralFlux, peakPick } from '../util.js'
+import { spectralFlux, peakPick, validate } from '../util.js'
 
 export default function onsets(data, opts) {
+  validate(data, opts)
   let { odf, hopSize, fs } = spectralFlux(data, opts)
   if (!odf.length) return new Float64Array(0)
   return peakPick(odf, { hopSize, fs, ...opts })

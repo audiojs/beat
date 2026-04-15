@@ -43,6 +43,8 @@ let bt  = beatTrack(samples, { fs: 44100 })       // { beats, bpm, confidence }
 ```
 
 > Works in Node.js and browser. No Web Audio API needed — operates on raw `Float32Array` / `Float64Array` samples.
+>
+> **Mono only.** Pass a single channel. For stereo, use one channel (`buffer.getChannelData(0)`) or mix to mono first.
 
 
 ## How it works
@@ -96,6 +98,7 @@ let ons = onsets(samples, { fs: 44100 })
 | `frameSize` | `2048` | STFT window size |
 | `hopSize` | `512` | Hop between frames |
 | `delta` | `1.4` | Adaptive threshold multiplier |
+| `windowSize` | `8` | Peak-pick local mean window (frames) |
 
 **Use when:** General-purpose onset detection — music, speech, mixed material.<br>
 **Ref:** Dixon, "Onset Detection Revisited" (DAFx 2006).<br>
@@ -237,6 +240,7 @@ let result = beatTrack(samples, { fs: 44100, bpm: 120 })  // hint tempo
 | Param | Default | |
 |---|---|---|
 | `bpm` | auto-estimated | Target BPM (auto-estimated if omitted) |
+| `tightness` | `680` | Tempo constraint weight (higher = stricter) |
 | + all `tempo` params | | |
 
 Returns `{ beats: Float64Array, bpm, confidence }`.
@@ -298,7 +302,7 @@ Systematic benchmark across 10 musical styles × 10 tempos (70–180 BPM) = 100 
 
 | Method | Acc1 (%) | Acc2 (%) | MAE (BPM) | Octave errors |
 |---|---|---|---|---|
-| `tempo` | 70 | 87 | 20.1 | 17 |
+| `tempo` | 70 | 87 | 19.5 | 16 |
 | `combTempo` | 87 | 93 | 8.7 | 6 |
 | `detect` | 87 | 93 | 8.7 | 6 |
 | `beatTrack` | 87 | 93 | 8.7 | 6 |
@@ -311,6 +315,8 @@ Use `detect` for uniform grids, `beatTrack` for adaptive (rubato-aware) placemen
 - **Acc2** — octave-tolerant accuracy (accepts half/double tempo within ±5%)
 - **MAE** — mean absolute BPM error across all cases
 - **Octave errors** — cases correct at octave level but wrong metrical level
+
+> `tempo` (autocorrelation) varies ±2% between runs due to random noise in the FM synth. Comb-filter methods are stable.
 
 ### Methodology
 

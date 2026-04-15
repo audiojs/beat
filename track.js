@@ -14,10 +14,11 @@
  * @see Ellis, "Beat Tracking by Dynamic Programming" (JNMR 2007)
  */
 
-import { spectralFlux } from './util.js'
+import { spectralFlux, ODF, validate } from './util.js'
 import combTempo from './tempo/comb.js'
 
 export default function beatTrack(data, opts) {
+  validate(data, opts)
   let fs = opts?.fs || 44100
   let sf = spectralFlux(data, opts)
   let { odf, nFrames, hopSize } = sf
@@ -25,8 +26,8 @@ export default function beatTrack(data, opts) {
 
   let odfRate = fs / hopSize
 
-  // reuse STFT via _odf cache — same trick detect() uses
-  let targetBpm = opts?.bpm || combTempo(data, { ...opts, _odf: sf }).bpm || 120
+  // reuse STFT via ODF cache — same trick detect() uses
+  let targetBpm = opts?.bpm || combTempo(data, { ...opts, [ODF]: sf }).bpm || 120
   let targetPeriod = odfRate * 60 / targetBpm
 
   // normalize ODF: zero-mean, unit-std — makes Ellis's tightness weight meaningful

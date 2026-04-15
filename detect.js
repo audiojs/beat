@@ -15,16 +15,17 @@
  * @see Dixon, "Onset Detection Revisited" (DAFx 2006)
  */
 
-import { spectralFlux, peakPick } from './util.js'
+import { spectralFlux, peakPick, ODF, validate } from './util.js'
 import combTempo from './tempo/comb.js'
 
 export default function detect(data, opts) {
+  validate(data, opts)
   let fs = opts?.fs || 44100
   let sf = spectralFlux(data, opts)
   if (!sf.odf.length) return { bpm: 0, confidence: 0, beats: new Float64Array(0), onsets: new Float64Array(0) }
 
   let ons = peakPick(sf.odf, { hopSize: sf.hopSize, fs: sf.fs, ...opts })
-  let { bpm, confidence } = combTempo(data, { ...opts, _odf: sf })
+  let { bpm, confidence } = combTempo(data, { ...opts, [ODF]: sf })
 
   if (bpm <= 0 || !ons.length) return { bpm, confidence, beats: new Float64Array(0), onsets: ons }
 

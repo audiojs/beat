@@ -13,12 +13,13 @@
  * @see Scheirer, "Tempo and Beat Analysis of Acoustic Musical Signals" (JASA 1998)
  */
 
-import { spectralFlux } from '../util.js'
+import { spectralFlux, ODF, validate } from '../util.js'
 
 export default function combTempo(data, opts) {
+  validate(data, opts)
   let odf, nFrames, hopSize, fs
-  if (opts?._odf) {
-    ;({ odf, nFrames, hopSize, fs } = opts._odf)
+  if (opts?.[ODF]) {
+    ;({ odf, nFrames, hopSize, fs } = opts[ODF])
   } else {
     ;({ odf, nFrames, hopSize, fs } = spectralFlux(data, opts))
   }

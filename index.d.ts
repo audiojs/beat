@@ -40,7 +40,21 @@ export interface BeatTrackResult {
 
 export interface BeatTrackOpts extends TempoOpts {
   bpm?: number
+  tightness?: number
 }
+
+/** Symbol key for passing a pre-computed ODF result to tempo/track functions, avoiding a second STFT pass. */
+export declare const ODF: unique symbol
+
+export declare function detect(data: Float32Array | Float64Array, opts?: OnsetOpts & TempoOpts): DetectResult
+export declare function onsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
+export declare function energyOnsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
+export declare function phaseOnsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
+export declare function bandOnsets(data: Float32Array | Float64Array, opts?: BandOnsetOpts): Float64Array
+export declare function tempo(data: Float32Array | Float64Array | null, opts?: TempoOpts): TempoResult
+export declare function combTempo(data: Float32Array | Float64Array | null, opts?: TempoOpts): TempoResult
+export declare function beatTrack(data: Float32Array | Float64Array, opts?: BeatTrackOpts): BeatTrackResult
+export declare function peakPick(odf: Float64Array, opts?: OnsetOpts): Float64Array
 
 export interface FluxResult {
   odf: Float64Array
@@ -50,14 +64,5 @@ export interface FluxResult {
   fs: number
 }
 
-export declare function detect(data: Float32Array | Float64Array, opts?: OnsetOpts & TempoOpts): DetectResult
-export declare function onsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
-export declare function energyOnsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
-export declare function phaseOnsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
-export declare function bandOnsets(data: Float32Array | Float64Array, opts?: BandOnsetOpts): Float64Array
-export declare function tempo(data: Float32Array | Float64Array, opts?: TempoOpts): TempoResult
-export declare function combTempo(data: Float32Array | Float64Array, opts?: TempoOpts): TempoResult
-export declare function beatTrack(data: Float32Array | Float64Array, opts?: BeatTrackOpts): BeatTrackResult
 export declare function spectralFlux(data: Float32Array | Float64Array, opts?: OnsetOpts): FluxResult
 export declare function energyFlux(data: Float32Array | Float64Array, opts?: OnsetOpts): FluxResult
-export declare function peakPick(odf: Float64Array, opts?: OnsetOpts): Float64Array

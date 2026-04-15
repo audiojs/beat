@@ -15,9 +15,10 @@
 
 import { cfft } from 'fourier-transform'
 import { hann } from 'window-function'
-import { peakPick } from '../util.js'
+import { peakPick, validate } from '../util.js'
 
 export default function phaseOnsets(data, opts) {
+  validate(data, opts)
   let fs = opts?.fs || 44100
   let frameSize = opts?.frameSize || 2048
   let hopSize = opts?.hopSize || 512

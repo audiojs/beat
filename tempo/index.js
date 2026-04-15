@@ -15,12 +15,13 @@
  * @see Davies & Plumbley, "Context-Dependent Beat Tracking" (TASLP 2007)
  */
 
-import { spectralFlux } from '../util.js'
+import { spectralFlux, ODF, validate } from '../util.js'
 
 export default function tempo(data, opts) {
+  validate(data, opts)
   let odf, nFrames, hopSize, fs
-  if (opts?._odf) {
-    ;({ odf, nFrames, hopSize, fs } = opts._odf)
+  if (opts?.[ODF]) {
+    ;({ odf, nFrames, hopSize, fs } = opts[ODF])
   } else {
     ;({ odf, nFrames, hopSize, fs } = spectralFlux(data, opts))
   }
@@ -53,6 +54,11 @@ export default function tempo(data, opts) {
     let weight = Math.exp(-0.5 * (logRatio / prefSigma) ** 2)
     scores.push({ bpm, confidence: raw * weight })
   }
+
+  // normalize to [0, 1] so confidence is comparable across algorithms
+  let maxConf = 0
+  for (let s of scores) if (s.confidence > maxConf) maxConf = s.confidence
+  if (maxConf > 0) for (let s of scores) s.confidence /= maxConf
 
   // sort by confidence descending
   scores.sort((a, b) => b.confidence - a.confidence)
@@ -97,7 +103,7 @@ export default function tempo(data, opts) {
         if (halfRaw > 0.02 && bestRaw > halfRaw * 2) {
           let logRatio = Math.log2(halfBpm / prefBpm)
           let weight = Math.exp(-0.5 * (logRatio / prefSigma) ** 2)
-          best = { bpm: halfBpm, confidence: halfRaw * weight }
+          best = { bpm: halfBpm, confidence: maxConf > 0 ? Math.min(1, halfRaw * weight / maxConf) : 0 }
         }
       }
     }

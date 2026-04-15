@@ -13,9 +13,10 @@
  * @see Klapuri, "Auditory Model Based Beat Tracking" (ICMC 1999)
  */
 
-import { energyFlux, peakPick } from '../util.js'
+import { energyFlux, peakPick, validate } from '../util.js'
 
 export default function energyOnsets(data, opts) {
+  validate(data, opts)
   let { odf, hopSize, fs } = energyFlux(data, opts)
   if (!odf.length) return new Float64Array(0)
   return peakPick(odf, { hopSize, fs, ...opts })
