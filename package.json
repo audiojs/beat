@@ -1,31 +1,25 @@
 {
   "name": "@audio/beat",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Beat detection: onset detection, tempo estimation, beat grid",
+  "description": "Beat detection — umbrella for @audio/beat-* atoms (onset detection, tempo estimation, beat tracking)",
   "exports": {
-    ".": "./index.js",
-    "./onset": "./onset/index.js",
-    "./onset/*.js": "./onset/*.js",
-    "./tempo": "./tempo/index.js",
-    "./tempo/*.js": "./tempo/*.js",
-    "./detect.js": "./detect.js",
-    "./track.js": "./track.js",
-    "./util.js": "./util.js"
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json"
   },
   "types": "./index.d.ts",
   "files": [
     "index.js",
-    "index.d.ts",
-    "onset",
-    "tempo",
-    "detect.js",
-    "track.js",
-    "util.js"
+    "index.d.ts"
   ],
   "sideEffects": false,
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "test:all": "npm test --workspaces --if-present && npm test",
+    "publish:all": "npm publish --workspaces && npm publish"
   },
   "repository": {
     "type": "git",
@@ -54,8 +48,11 @@
     "node": ">=18"
   },
   "dependencies": {
-    "fourier-transform": "^2.0.0",
-    "window-function": "^3.0.0"
+    "@audio/beat-core": "^1.0.0",
+    "@audio/beat-onset": "^1.0.0",
+    "@audio/beat-tempo": "^1.0.0",
+    "@audio/beat-detect": "^1.0.0",
+    "@audio/beat-track": "^1.0.0"
   },
   "devDependencies": {
     "audio-decode": "^3.9.0",
@@ -63,5 +60,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "main": "index.js",
+  "workspaces": [
+    "packages/*"
+  ]
 }

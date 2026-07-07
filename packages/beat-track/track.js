@@ -14,8 +14,8 @@
  * @see Ellis, "Beat Tracking by Dynamic Programming" (JNMR 2007)
  */
 
-import { spectralFlux, ODF, validate } from './util.js'
-import combTempo from './tempo/comb.js'
+import { spectralFlux, ODF, validate } from '@audio/beat-core'
+import combTempo from '@audio/beat-tempo/comb'
 
 export default function beatTrack(data, opts) {
   validate(data, opts)

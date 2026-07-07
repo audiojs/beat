@@ -13,7 +13,7 @@
  * @see Klapuri, "Auditory Model Based Beat Tracking" (ICMC 1999)
  */
 
-import { energyFlux, peakPick, validate } from '../util.js'
+import { energyFlux, peakPick, validate } from '@audio/beat-core'
 
 export default function energyOnsets(data, opts) {
   validate(data, opts)

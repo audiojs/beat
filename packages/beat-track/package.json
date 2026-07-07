@@ -1,0 +1,42 @@
+{
+  "name": "@audio/beat-track",
+  "version": "1.0.0",
+  "description": "Dynamic programming beat tracker",
+  "type": "module",
+  "sideEffects": false,
+  "main": "track.js",
+  "exports": {
+    ".": "./track.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "track.js"
+  ],
+  "dependencies": {
+    "@audio/beat-core": "^1.0.0",
+    "@audio/beat-tempo": "^1.0.0"
+  },
+  "keywords": [
+    "audio",
+    "dsp",
+    "beat",
+    "beat-tracking"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/audiojs/beat-detection.git",
+    "directory": "packages/beat-track"
+  },
+  "homepage": "https://github.com/audiojs/beat-detection/tree/main/packages/beat-track",
+  "bugs": {
+    "url": "https://github.com/audiojs/beat-detection/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

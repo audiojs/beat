@@ -189,16 +189,25 @@ select:focus{border-color:var(--fg);outline:none}
   "imports": {
     "fourier-transform": "https://esm.sh/fourier-transform",
     "window-function": "https://esm.sh/window-function",
-    "beat-detection": "./index.js",
-    "beat-detection/synth": "./synth.js",
-    "beat-detection/floatbeats": "./floatbeats.js"
+    "@audio/beat": "./index.js",
+    "@audio/beat/synth": "./synth.js",
+    "@audio/beat/floatbeats": "./floatbeats.js",
+    "@audio/beat-core": "./packages/beat-core/index.js",
+    "@audio/beat-onset": "./packages/beat-onset/index.js",
+    "@audio/beat-onset/energy": "./packages/beat-onset/energy.js",
+    "@audio/beat-onset/phase": "./packages/beat-onset/phase.js",
+    "@audio/beat-onset/band": "./packages/beat-onset/band.js",
+    "@audio/beat-tempo": "./packages/beat-tempo/index.js",
+    "@audio/beat-tempo/comb": "./packages/beat-tempo/comb.js",
+    "@audio/beat-detect": "./packages/beat-detect/detect.js",
+    "@audio/beat-track": "./packages/beat-track/track.js"
   }
 }
 </script>
 <script type="module">
-import { onsets, energyOnsets, phaseOnsets, bandOnsets, tempo, combTempo, detect, beatTrack } from 'beat-detection'
-import { rock, funk, ballad, breakbeat, edm, hiphop, disco, jazz, reggae } from 'beat-detection/synth'
-import { renderFloatbeat, sanxion, stranglehold } from 'beat-detection/floatbeats'
+import { onsets, energyOnsets, phaseOnsets, bandOnsets, tempo, combTempo, detect, beatTrack } from '@audio/beat'
+import { rock, funk, ballad, breakbeat, edm, hiphop, disco, jazz, reggae } from '@audio/beat/synth'
+import { renderFloatbeat, sanxion, stranglehold } from '@audio/beat/floatbeats'
 
 const SR = 44100
 let sourceSR = SR

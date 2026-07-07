@@ -15,7 +15,7 @@
  * @see Davies & Plumbley, "Context-Dependent Beat Tracking" (TASLP 2007)
  */
 
-import { spectralFlux, ODF, validate } from '../util.js'
+import { spectralFlux, ODF, validate } from '@audio/beat-core'
 
 export default function tempo(data, opts) {
   validate(data, opts)

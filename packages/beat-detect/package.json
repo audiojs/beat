@@ -1,0 +1,43 @@
+{
+  "name": "@audio/beat-detect",
+  "version": "1.0.0",
+  "description": "Full beat detection pipeline: onset detection → tempo estimation → beat grid",
+  "type": "module",
+  "sideEffects": false,
+  "main": "detect.js",
+  "exports": {
+    ".": "./detect.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "detect.js"
+  ],
+  "dependencies": {
+    "@audio/beat-core": "^1.0.0",
+    "@audio/beat-tempo": "^1.0.0"
+  },
+  "keywords": [
+    "audio",
+    "dsp",
+    "beat",
+    "beat-detection",
+    "bpm"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/audiojs/beat-detection.git",
+    "directory": "packages/beat-detect"
+  },
+  "homepage": "https://github.com/audiojs/beat-detection/tree/main/packages/beat-detect",
+  "bugs": {
+    "url": "https://github.com/audiojs/beat-detection/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
