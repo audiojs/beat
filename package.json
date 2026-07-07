@@ -1,5 +1,5 @@
 {
-  "name": "beat-detection",
+  "name": "@audio/beat",
   "version": "1.1.0",
   "type": "module",
   "description": "Beat detection: onset detection, tempo estimation, beat grid",
@@ -60,5 +60,8 @@
   "devDependencies": {
     "audio-decode": "^3.9.0",
     "tst": "^9.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
