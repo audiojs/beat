@@ -1,4 +1,4 @@
-# beat-detection [![test](https://github.com/audiojs/beat-detection/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/beat-detection/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/beat-detection)](https://www.npmjs.com/package/beat-detection) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
+# @audio/beat [![test](https://github.com/audiojs/beat-detection/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/beat-detection/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/@audio/beat)](https://www.npmjs.com/package/@audio/beat) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
 Onset detection, tempo estimation, and beat tracking. &nbsp;·&nbsp; **[live demo ↗](https://audiojs.github.io/beat-detection/)**
 
@@ -24,11 +24,11 @@ Onset detection, tempo estimation, and beat tracking. &nbsp;·&nbsp; **[live dem
 ## Usage
 
 ```
-npm install beat-detection
+npm install @audio/beat
 ```
 
 ```js
-import { detect, onsets, tempo, beatTrack } from 'beat-detection'
+import { detect, onsets, tempo, beatTrack } from '@audio/beat'
 
 // full pipeline: onsets → tempo → beat grid
 let result = detect(samples, { fs: 44100 })
@@ -88,7 +88,7 @@ All onset functions take raw samples and return onset times in seconds as `Float
 Spectral flux. STFT → magnitude → sum positive frame-to-frame differences → adaptive threshold peak-pick. The general-purpose default.
 
 ```js
-import { onsets } from 'beat-detection'
+import { onsets } from '@audio/beat'
 let ons = onsets(samples, { fs: 44100 })
 ```
 
@@ -110,7 +110,7 @@ let ons = onsets(samples, { fs: 44100 })
 Energy flux. Per-frame RMS energy → positive first differences → adaptive threshold. No FFT — fastest algorithm. Best for strong transients.
 
 ```js
-import { energyOnsets } from 'beat-detection'
+import { energyOnsets } from '@audio/beat'
 let ons = energyOnsets(samples, { fs: 44100 })
 ```
 
@@ -127,7 +127,7 @@ Same params as `onsets`.
 Phase deviation. Measures divergence between predicted and actual STFT phase, weighted by magnitude. More robust to steady-state signals (sustained notes, drones) than spectral flux.
 
 ```js
-import { phaseOnsets } from 'beat-detection'
+import { phaseOnsets } from '@audio/beat'
 let ons = phaseOnsets(samples, { fs: 44100 })
 ```
 
@@ -144,7 +144,7 @@ Same params as `onsets`.
 Multi-band spectral flux. Splits spectrum into frequency bands, computes spectral flux per band, sums. Detects onsets across different instrument ranges simultaneously.
 
 ```js
-import { bandOnsets } from 'beat-detection'
+import { bandOnsets } from '@audio/beat'
 let ons = bandOnsets(samples, { fs: 44100, bands: 6 })
 ```
 
@@ -177,7 +177,7 @@ Both return `{ bpm, confidence }`. Pass `candidates: N` to get ranked alternativ
 Autocorrelation of the onset detection function. Finds the dominant periodicity by correlating the spectral flux ODF with itself at different lags. Perceptual weighting (log-Gaussian centered at 120 BPM) resolves octave ambiguity.
 
 ```js
-import { tempo } from 'beat-detection'
+import { tempo } from '@audio/beat'
 let { bpm, confidence } = tempo(samples, { fs: 44100 })
 let { bpm, candidates } = tempo(samples, { fs: 44100, candidates: 3 })
 ```
@@ -199,7 +199,7 @@ let { bpm, candidates } = tempo(samples, { fs: 44100, candidates: 3 })
 Comb-filter resonance. Tests BPM hypotheses by correlating the ODF with raised-cosine pulse trains at each candidate tempo (+ harmonics). Returns the BPM with highest resonance.
 
 ```js
-import { combTempo } from 'beat-detection'
+import { combTempo } from '@audio/beat'
 let { bpm, confidence } = combTempo(samples, { fs: 44100 })
 ```
 
@@ -217,7 +217,7 @@ Same params as `tempo`.
 Full pipeline: spectral flux onsets → comb-filter tempo → phase-aligned beat grid. Shares a single STFT pass across onset and tempo stages, so it costs only marginally more than either alone.
 
 ```js
-import { detect } from 'beat-detection'
+import { detect } from '@audio/beat'
 let { bpm, confidence, beats, onsets } = detect(samples, { fs: 44100 })
 ```
 
@@ -232,7 +232,7 @@ Returns `{ bpm, confidence, beats: Float64Array, onsets: Float64Array }`.
 Dynamic programming beat tracker. Estimates tempo (via autocorrelation), then finds the globally optimal beat sequence by maximizing onset strength while penalizing tempo deviation. Each beat position is placed where the onset function is strongest, subject to staying near the expected tempo period.
 
 ```js
-import { beatTrack } from 'beat-detection'
+import { beatTrack } from '@audio/beat'
 let { beats, bpm, confidence } = beatTrack(samples, { fs: 44100 })
 let result = beatTrack(samples, { fs: 44100, bpm: 120 })  // hint tempo
 ```
@@ -259,7 +259,7 @@ Low-level building blocks. Used internally, exported for custom pipelines.
 STFT → magnitude → sum positive differences. Returns the onset detection function (ODF) as `{ odf, nFrames, hopSize, frameSize, fs }`.
 
 ```js
-import { spectralFlux } from 'beat-detection'
+import { spectralFlux } from '@audio/beat'
 let { odf, nFrames, hopSize } = spectralFlux(samples, { fs: 44100 })
 ```
 
@@ -272,7 +272,7 @@ Per-frame RMS energy → positive first differences. Returns `{ odf, nFrames, ho
 Adaptive threshold peak-picker. Local mean × delta → pick peaks above threshold. Returns onset times in seconds.
 
 ```js
-import { spectralFlux, peakPick } from 'beat-detection'
+import { spectralFlux, peakPick } from '@audio/beat'
 let { odf, hopSize, fs } = spectralFlux(samples, { fs: 44100 })
 let onsets = peakPick(odf, { hopSize, fs, delta: 1.5 })
 ```
