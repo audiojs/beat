@@ -34,12 +34,12 @@
   "author": "Dmitry Iv. <dfcreative@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/audiojs/beat-detection.git",
+    "url": "git+https://github.com/audiojs/beat.git",
     "directory": "packages/beat-onset"
   },
-  "homepage": "https://github.com/audiojs/beat-detection/tree/main/packages/beat-onset",
+  "homepage": "https://github.com/audiojs/beat/tree/main/packages/beat-onset",
   "bugs": {
-    "url": "https://github.com/audiojs/beat-detection/issues"
+    "url": "https://github.com/audiojs/beat/issues"
   },
   "engines": {
     "node": ">=18"

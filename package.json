@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/audiojs/beat-detection.git"
+    "url": "git+https://github.com/audiojs/beat.git"
   },
   "keywords": [
     "beat",
@@ -41,9 +41,9 @@
   "author": "Dmitry Iv. <dfcreative@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/audiojs/beat-detection/issues"
+    "url": "https://github.com/audiojs/beat/issues"
   },
-  "homepage": "https://github.com/audiojs/beat-detection#readme",
+  "homepage": "https://github.com/audiojs/beat#readme",
   "engines": {
     "node": ">=18"
   },

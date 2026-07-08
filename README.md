@@ -1,4 +1,4 @@
-# @audio/beat [![test](https://github.com/audiojs/beat-detection/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/beat-detection/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/@audio/beat)](https://www.npmjs.com/package/@audio/beat) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
+# @audio/beat [![test](https://github.com/audiojs/beat/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/beat/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/@audio/beat)](https://www.npmjs.com/package/@audio/beat) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
 Onset detection, tempo estimation, and beat tracking. &nbsp;·&nbsp; **[live demo ↗](https://audiojs.github.io/beat-detection/)**
 
@@ -332,5 +332,5 @@ Fully self-contained: FM-synthesis drum patterns (`synth.js`) generate determini
 ## See also
 
 - [digital-filter](https://github.com/audiojs/digital-filter) — filter design and processing
-- [time-stretch](https://github.com/audiojs/time-stretch) — time stretching and pitch shifting
+- [stretch](https://github.com/audiojs/stretch) — time stretching and pitch shifting
 - [audio-lena](https://github.com/audiojs/audio-lena) — test audio sample
