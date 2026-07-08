@@ -26,9 +26,8 @@ jobs:
       - name: Stage demo
         run: |
           mkdir -p _site
-          cp index.html _site/
-          cp index.js synth.js floatbeats.js util.js detect.js track.js _site/
-          cp -r onset tempo _site/
+          cp index.html index.js synth.js floatbeats.js _site/
+          cp -r packages _site/
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
