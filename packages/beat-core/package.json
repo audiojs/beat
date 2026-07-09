@@ -1,7 +1,7 @@
 {
   "name": "@audio/beat-core",
-  "version": "1.0.0",
-  "description": "Shared onset-detection primitives — spectral flux, energy flux, ODF, adaptive peak picking",
+  "version": "1.0.1",
+  "description": "Internal glue for @audio/beat-* atoms — onset-detection primitives (spectral/energy flux, ODF, adaptive peak picking)",
   "type": "module",
   "sideEffects": false,
   "main": "index.js",
