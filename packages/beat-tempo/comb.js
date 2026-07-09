@@ -13,7 +13,8 @@
  * @see Scheirer, "Tempo and Beat Analysis of Acoustic Musical Signals" (JASA 1998)
  */
 
-import { spectralFlux, ODF, validate } from '@audio/beat-core'
+import { spectralFlux, ODF } from '@audio/onset'
+import { validate } from '@audio/beat-core'
 
 export default function combTempo(data, opts) {
   validate(data, opts)

@@ -16,7 +16,8 @@
 
 import fft from 'fourier-transform'
 import { hann } from 'window-function'
-import { peakPick, validate } from '@audio/beat-core'
+import { peakPick } from '@audio/onset'
+import { validate } from '@audio/beat-core'
 
 export default function bandOnsets(data, opts) {
   validate(data, opts)

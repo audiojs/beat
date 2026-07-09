@@ -1,6 +1,6 @@
 import test, { almost, ok, is } from 'tst'
 import { detect, onsets, energyOnsets, phaseOnsets, bandOnsets, tempo, combTempo, beatTrack } from './index.js'
-import { spectralFlux, energyFlux } from '@audio/beat-core'
+import { spectralFlux, energyFlux } from '@audio/onset'
 import { fmKick, fmSnare, fmHihat, bassNote, mixHits, edm as edmBeat, hiphop as hiphopBeat, disco as discoBeat, jazz as jazzSwing, reggae as reggaeBeat, rock as rockFn, funk as funkFn, ballad as balladFn, breakbeat as breakbeatFn } from './synth.js'
 import { renderFloatbeat, sanxion } from './floatbeats.js'
 

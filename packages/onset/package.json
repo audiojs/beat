@@ -1,7 +1,7 @@
 {
-  "name": "@audio/beat-core",
-  "version": "1.0.2",
-  "description": "Internal glue for @audio/beat-* atoms — shared input validation. Onset detection lives in @audio/onset.",
+  "name": "@audio/onset",
+  "version": "1.0.0",
+  "description": "Onset detection — spectral-flux and energy-flux onset detection functions (ODFs) + adaptive peak picking",
   "type": "module",
   "sideEffects": false,
   "main": "index.js",
@@ -12,20 +12,27 @@
   "files": [
     "index.js"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "fourier-transform": "^2.2.0",
+    "window-function": "^3.0.0"
+  },
   "keywords": [
     "audio",
     "dsp",
-    "beat"
+    "onset-detection",
+    "onset",
+    "spectral-flux",
+    "note-onset",
+    "transient"
   ],
   "license": "MIT",
   "author": "Dmitry Iv. <dfcreative@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/audiojs/beat.git",
-    "directory": "packages/beat-core"
+    "directory": "packages/onset"
   },
-  "homepage": "https://github.com/audiojs/beat/tree/main/packages/beat-core",
+  "homepage": "https://github.com/audiojs/beat/tree/main/packages/onset",
   "bugs": {
     "url": "https://github.com/audiojs/beat/issues"
   },

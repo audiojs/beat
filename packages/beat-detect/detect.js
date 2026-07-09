@@ -15,7 +15,8 @@
  * @see Dixon, "Onset Detection Revisited" (DAFx 2006)
  */
 
-import { spectralFlux, peakPick, ODF, validate } from '@audio/beat-core'
+import { spectralFlux, peakPick, ODF } from '@audio/onset'
+import { validate } from '@audio/beat-core'
 import combTempo from '@audio/beat-tempo/comb'
 
 export default function detect(data, opts) {

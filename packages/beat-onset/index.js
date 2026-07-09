@@ -12,7 +12,8 @@
  * @see Dixon, "Onset Detection Revisited" (DAFx 2006)
  */
 
-import { spectralFlux, peakPick, validate } from '@audio/beat-core'
+import { spectralFlux, peakPick } from '@audio/onset'
+import { validate } from '@audio/beat-core'
 
 export default function onsets(data, opts) {
   validate(data, opts)
