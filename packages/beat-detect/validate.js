@@ -1,11 +1,8 @@
-// Shared input validation for @audio/beat-* algorithms.
-// Onset detection (spectralFlux/energyFlux/peakPick/ODF) lives in @audio/onset.
+// Input validation at the public API boundary (inlined family convention).
 
 function isPow2(n) { return n > 0 && (n & (n - 1)) === 0 }
 
 /**
- * Validate common public API inputs. Call at the boundary of every exported function.
- * Throws TypeError / RangeError with a clear message for bad inputs.
  * @param {*} data - Audio samples or null (null is valid when an ODF cache is supplied)
  * @param {Object} [opts]
  */

@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-tempo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Tempo estimation via autocorrelation of onset detection function",
   "type": "module",
   "sideEffects": false,
@@ -12,10 +12,10 @@
   },
   "files": [
     "index.js",
-    "comb.js"
+    "comb.js",
+    "validate.js"
   ],
   "dependencies": {
-    "@audio/beat-core": "^1.0.0",
     "@audio/onset": "^1.0.0"
   },
   "keywords": [

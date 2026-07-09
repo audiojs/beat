@@ -16,7 +16,7 @@
 import { cfft } from 'fourier-transform'
 import { hann } from 'window-function'
 import { peakPick } from '@audio/onset'
-import { validate } from '@audio/beat-core'
+import { validate } from './validate.js'
 
 export default function phaseOnsets(data, opts) {
   validate(data, opts)

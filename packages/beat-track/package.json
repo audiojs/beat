@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-track",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Dynamic programming beat tracker",
   "type": "module",
   "sideEffects": false,
@@ -10,10 +10,10 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "track.js"
+    "track.js",
+    "validate.js"
   ],
   "dependencies": {
-    "@audio/beat-core": "^1.0.0",
     "@audio/beat-tempo": "^1.0.0",
     "@audio/onset": "^1.0.0"
   },

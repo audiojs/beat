@@ -16,7 +16,7 @@
  */
 
 import { spectralFlux, ODF } from '@audio/onset'
-import { validate } from '@audio/beat-core'
+import { validate } from './validate.js'
 
 export default function tempo(data, opts) {
   validate(data, opts)

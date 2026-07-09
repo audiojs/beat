@@ -14,7 +14,7 @@
  */
 
 import { energyFlux, peakPick } from '@audio/onset'
-import { validate } from '@audio/beat-core'
+import { validate } from './validate.js'
 
 export default function energyOnsets(data, opts) {
   validate(data, opts)

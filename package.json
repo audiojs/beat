@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "description": "Beat detection — umbrella for @audio/beat-* atoms (onset detection, tempo estimation, beat tracking)",
   "exports": {
@@ -48,7 +48,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@audio/beat-core": "^1.0.0",
     "@audio/onset": "^1.0.0",
     "@audio/beat-onset": "^1.0.0",
     "@audio/beat-tempo": "^1.0.0",

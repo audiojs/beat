@@ -13,7 +13,7 @@
  */
 
 import { spectralFlux, peakPick } from '@audio/onset'
-import { validate } from '@audio/beat-core'
+import { validate } from './validate.js'
 
 export default function onsets(data, opts) {
   validate(data, opts)

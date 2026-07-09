@@ -15,7 +15,7 @@
  */
 
 import { spectralFlux, ODF } from '@audio/onset'
-import { validate } from '@audio/beat-core'
+import { validate } from './validate.js'
 import combTempo from '@audio/beat-tempo/comb'
 
 export default function beatTrack(data, opts) {
