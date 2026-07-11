@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-track",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Dynamic programming beat tracker",
   "type": "module",
   "sideEffects": false,
@@ -11,7 +11,8 @@
   },
   "files": [
     "track.js",
-    "validate.js"
+    "validate.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "@audio/beat-tempo": "^1.0.0",
@@ -39,5 +40,7 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-onset",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Spectral flux onset detection",
   "type": "module",
   "sideEffects": false,
@@ -17,7 +17,8 @@
     "energy.js",
     "phase.js",
     "band.js",
-    "validate.js"
+    "validate.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "fourier-transform": "^2.2.0",
@@ -47,5 +48,7 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }

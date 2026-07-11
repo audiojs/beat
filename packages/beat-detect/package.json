@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-detect",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Full beat detection pipeline: onset detection → tempo estimation → beat grid",
   "type": "module",
   "sideEffects": false,
@@ -11,7 +11,8 @@
   },
   "files": [
     "detect.js",
-    "validate.js"
+    "validate.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "@audio/beat-tempo": "^1.0.0",
@@ -40,5 +41,7 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }

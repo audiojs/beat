@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "type": "module",
   "description": "Beat detection — umbrella for @audio/beat-* atoms (onset detection, tempo estimation, beat tracking)",
   "exports": {
@@ -64,5 +64,6 @@
   "main": "index.js",
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "funding": "https://github.com/sponsors/audiojs"
 }

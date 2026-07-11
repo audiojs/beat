@@ -1,6 +1,6 @@
 {
   "name": "@audio/onset",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Onset detection — spectral-flux and energy-flux onset detection functions (ODFs) + adaptive peak picking",
   "type": "module",
   "sideEffects": false,
@@ -10,7 +10,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "fourier-transform": "^2.2.0",
@@ -41,5 +42,7 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }
