@@ -1,5 +1,7 @@
 # @audio/beat [![test](https://github.com/audiojs/beat/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/beat/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/@audio/beat)](https://www.npmjs.com/package/@audio/beat) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
+Try it in the browser: [Key and BPM finder](https://audiojs.dev/util/key-bpm/). Runs on this package, nothing is uploaded.
+
 Onset detection, tempo estimation, and beat tracking. &nbsp;·&nbsp; **[live demo ↗](https://audiojs.github.io/beat-detection/)**
 
 <table><tr><td valign="top">

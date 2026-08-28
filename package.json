@@ -1,8 +1,8 @@
 {
   "name": "@audio/beat",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "type": "module",
-  "description": "Beat detection — umbrella for @audio/beat-* atoms (onset detection, tempo estimation, beat tracking)",
+  "description": "Beat detection \u2014 umbrella for @audio/beat-* atoms (onset detection, tempo estimation, beat tracking)",
   "exports": {
     ".": {
       "types": "./index.d.ts",
