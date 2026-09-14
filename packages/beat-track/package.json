@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "track.js",
   "exports": {
-    ".": "./track.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./track.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

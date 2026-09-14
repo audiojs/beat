@@ -13,7 +13,7 @@ import tempo from '@audio/beat-tempo'
 Autocorrelation of the onset detection function. Finds the dominant periodicity by correlating the spectral flux ODF with itself at different lags. Perceptual weighting (log-Gaussian centered at 120 BPM) resolves octave ambiguity.
 
 ```js
-import { tempo } from '@audio/beat'
+import tempo from '@audio/beat-tempo'
 let { bpm, confidence } = tempo(samples, { fs: 44100 })
 let { bpm, candidates } = tempo(samples, { fs: 44100, candidates: 3 })
 ```

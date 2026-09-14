@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "detect.js",
   "exports": {
-    ".": "./detect.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./detect.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

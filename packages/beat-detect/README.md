@@ -13,7 +13,7 @@ import detect from '@audio/beat-detect'
 Full pipeline: spectral flux onsets → comb-filter tempo → phase-aligned beat grid. Shares a single STFT pass across onset and tempo stages, so it costs only marginally more than either alone.
 
 ```js
-import { detect } from '@audio/beat'
+import detect from '@audio/beat-detect'
 let { bpm, confidence, beats, onsets } = detect(samples, { fs: 44100 })
 ```
 
