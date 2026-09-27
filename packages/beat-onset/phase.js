@@ -14,7 +14,7 @@
  */
 
 import { cfft } from 'fourier-transform'
-import { hann } from 'window-function'
+import hann from 'window-function/hann'
 import { peakPick } from '@audio/onset'
 import { validate } from './validate.js'
 

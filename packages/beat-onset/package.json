@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-onset",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Spectral flux onset detection",
   "type": "module",
   "sideEffects": false,

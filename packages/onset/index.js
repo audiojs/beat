@@ -6,7 +6,7 @@
 // key to a downstream consumer to avoid a second STFT pass.
 
 import fft from 'fourier-transform'
-import { hann } from 'window-function'
+import hann from 'window-function/hann'
 
 /** Symbol key for handing a precomputed ODF result to a downstream tempo/track pass. */
 export const ODF = Symbol('onset:odf')
