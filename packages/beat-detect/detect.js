@@ -30,22 +30,10 @@ export default function detect(data, opts) {
 
   if (bpm <= 0 || !ons.length) return { bpm, confidence, beats: new Float64Array(0), onsets: ons }
 
-  // build beat grid: find best phase by alignment with detected onsets
+  // build beat grid: the phase that lays the most onset strength on it
   let beatInterval = 60 / bpm
   let duration = data.length / fs
-
-  let bestPhase = 0, bestScore = -Infinity
-  let nTest = Math.min(20, Math.ceil(beatInterval * fs / sf.hopSize))
-  for (let p = 0; p < nTest; p++) {
-    let phase = (p / nTest) * beatInterval
-    let score = 0
-    for (let o of ons) {
-      let dist = ((o - phase) % beatInterval + beatInterval) % beatInterval
-      if (dist > beatInterval / 2) dist = beatInterval - dist
-      score -= dist
-    }
-    if (score > bestScore) { bestScore = score; bestPhase = phase }
-  }
+  let bestPhase = gridPhase(sf.odf, sf.hopSize / sf.fs, beatInterval)
 
   let beats = []
   for (let t = bestPhase; t < duration; t += beatInterval) beats.push(t)
@@ -55,4 +43,27 @@ export default function detect(data, opts) {
     beats.unshift(Math.max(0, beats[0] - beatInterval))
 
   return { bpm, confidence, beats: new Float64Array(beats), onsets: ons }
+}
+
+/**
+ * Phase of a beat grid of period `iv` (s): the one whose points collect the most ODF strength within ±10 %
+ * of a period, raised-cosine weighted, tested at every ODF frame of the period. Summed distances to the
+ * nearest onset don't prefer a phase when off-beats sound too (8th-note hats): every phase between an
+ * on-beat and an off-beat onset scored the same, and a 120 BPM loop's beats fell 100 ms off.
+ * @param {Float64Array} odf onset detection function, one value per frame
+ * @param {number} dt seconds per ODF frame
+ * @param {number} iv beat period (s)
+ */
+export function gridPhase(odf, dt, iv) {
+	let nTest = Math.max(20, Math.ceil(iv / dt)), win = 0.1 * iv, best = 0, bestScore = -Infinity
+	for (let p = 0; p < nTest; p++) {
+		let phase = p / nTest * iv, score = 0
+		for (let i = 0; i < odf.length; i++) {
+			let d = ((i * dt - phase) % iv + iv) % iv
+			if (d > iv / 2) d = iv - d
+			if (d < win) score += odf[i] * (0.5 + 0.5 * Math.cos(Math.PI * d / win))
+		}
+		if (score > bestScore) { bestScore = score; best = phase }
+	}
+	return best
 }

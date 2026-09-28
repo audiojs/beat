@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat-track",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Dynamic programming beat tracker",
   "type": "module",
   "sideEffects": false,
@@ -18,8 +18,8 @@
     "index.d.ts"
   ],
   "dependencies": {
-    "@audio/beat-tempo": "^1.0.0",
-    "@audio/onset": "^1.0.0"
+    "@audio/beat-tempo": "^2.0.0",
+    "@audio/onset": "^1.0.3"
   },
   "keywords": [
     "audio",

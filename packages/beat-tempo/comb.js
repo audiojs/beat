@@ -1,6 +1,7 @@
 /**
  * Tempo estimation via comb-filter resonance.
- * Tests BPM hypotheses by summing ODF energy at pulse-train positions with harmonics.
+ * Tests BPM hypotheses with a comb over the ODF's autocorrelation: the beat period and its
+ * multiples (Davies & Plumbley 2007), whatever the beats' phase.
  * @param {Float32Array|Float64Array} data - Audio samples (mono)
  * @param {Object} [opts]
  * @param {number} [opts.fs=44100] - Sample rate
@@ -31,33 +32,38 @@ export default function combTempo(data, opts) {
   let topN = opts?.candidates || 1
   let odfRate = fs / hopSize
 
-  // perceptual tempo preference: log-Gaussian centered ~120 BPM
-  let prefBpm = 120, prefSigma = 1.4
+  // perceptual tempo preference: Davies & Plumbley's Rayleigh weighting of the beat period, peaking at
+  // 0.5 s (120 BPM); it goes with their comb, which otherwise favours the slower metrical level
+  let beta = 0.5 * odfRate
 
-  // test BPM hypotheses in 1-BPM steps using comb filter correlation
+  // Autocorrelation of the ODF (mean removed, unbiased), over the lags the comb reads. A pulse train laid
+  // on the ODF from frame 0 scored a tempo by where the file's first beat happened to fall: loops at 85,
+  // 100, 140 and 160 BPM read 149, 133, 93 and 140. The autocorrelation doesn't depend on the phase.
+  let mean = 0
+  for (let i = 0; i < nFrames; i++) mean += odf[i]
+  mean /= nFrames
+  let x = new Float64Array(nFrames)
+  for (let i = 0; i < nFrames; i++) x[i] = odf[i] - mean
+  let maxLag = Math.min(nFrames - 1, Math.ceil(4 * odfRate * 60 / minBpm) + 4)
+  let acf = new Float64Array(maxLag + 2)
+  for (let k = 0; k <= maxLag; k++) {
+    let s = 0
+    for (let i = 0; i + k < nFrames; i++) s += x[i] * x[i + k]
+    acf[k] = s / (nFrames - k)
+  }
+  let at = t => { let k = Math.floor(t), f = t - k; return k + 1 > maxLag ? 0 : acf[k] * (1 - f) + acf[k + 1] * f }
+
+  // test BPM hypotheses in 1-BPM steps: the comb sums the autocorrelation at the beat period and its
+  // multiples, each widened by its own tolerance (Davies & Plumbley, "Context-Dependent Beat Tracking of
+  // Musical Audio", TASLP 2007, eq. 5)
   let scores = []
   let maxScore = 0
   for (let bpm = minBpm; bpm <= maxBpm; bpm++) {
     let period = odfRate * 60 / bpm
     let score = 0
-    // correlate ODF with pulse train at this BPM + harmonics
-    for (let h = 1; h <= 4; h++) {
-      let p = period / h
-      let halfWidth = Math.max(1, p * 0.15)
-      let weight = 1 / h
-      for (let i = 0; i < nFrames; i++) {
-        let phase = i % p
-        if (phase > p / 2) phase = p - phase
-        // raised-cosine window around each pulse position
-        if (phase < halfWidth) {
-          let w = 0.5 * (1 + Math.cos(Math.PI * phase / halfWidth))
-          score += odf[i] * weight * w
-        }
-      }
-    }
-    // apply perceptual weighting
-    let logRatio = Math.log2(bpm / prefBpm)
-    score *= Math.exp(-0.5 * (logRatio / prefSigma) ** 2)
+    for (let a = 1; a <= 4; a++)
+      for (let b = 1 - a; b <= a - 1; b++) score += at(a * period + b) / (2 * a - 1)
+    score = Math.max(0, score) * period / beta * Math.exp(-0.5 * ((period / beta) ** 2 - 1))
     scores.push({ bpm, confidence: score })
     if (score > maxScore) maxScore = score
   }

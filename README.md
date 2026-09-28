@@ -198,7 +198,7 @@ let { bpm, candidates } = tempo(samples, { fs: 44100, candidates: 3 })
 
 ### `combTempo(data, opts)`
 
-Comb-filter resonance. Tests BPM hypotheses by correlating the ODF with raised-cosine pulse trains at each candidate tempo (+ harmonics). Returns the BPM with highest resonance.
+Comb-filter resonance. Tests BPM hypotheses with a comb over the ODF's autocorrelation: it sums the autocorrelation at the beat period and its multiples up to 4×, each widened by its own tolerance, and weights the period with a Rayleigh curve peaking at 120 BPM. The autocorrelation doesn't depend on where the beats fall, so neither does the tempo. Returns the BPM with highest resonance.
 
 ```js
 import { combTempo } from '@audio/beat'
@@ -208,8 +208,8 @@ let { bpm, confidence } = combTempo(samples, { fs: 44100 })
 Same params as `tempo`.
 
 **Use when:** Cross-validation with autocorrelation, or when the signal has strong harmonic tempo structure.<br>
-**Ref:** Scheirer, "Tempo and Beat Analysis of Acoustic Musical Signals" (JASA 1998).<br>
-**Complexity:** $O(N \log F + B \cdot L)$ where $B$ = BPM range tested.
+**Ref:** Davies & Plumbley, "Context-Dependent Beat Tracking of Musical Audio" (TASLP 2007); Scheirer, "Tempo and Beat Analysis of Acoustic Musical Signals" (JASA 1998).<br>
+**Complexity:** $O(N \log F + M \cdot K)$ where $M$ = ODF frames, $K$ = autocorrelation lags read (four beat periods at `minBpm`).
 
 
 ## Beat Tracking

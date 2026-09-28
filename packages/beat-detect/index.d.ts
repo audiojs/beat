@@ -30,3 +30,12 @@ export interface DetectResult {
  * Shares a single STFT pass across onset and tempo stages.
  */
 export default function detect(data: Float32Array | Float64Array, opts?: DetectOptions): DetectResult
+
+/**
+ * Phase of a beat grid of period `iv`, seconds: the offset whose grid points collect the most ODF strength
+ * within ±10 % of a period (raised-cosine weighted), tested at every ODF frame of the period (at least 20 phases).
+ * @param odf onset detection function, one value per frame
+ * @param dt seconds per ODF frame (hopSize / fs)
+ * @param iv beat period, seconds
+ */
+export function gridPhase(odf: Float64Array, dt: number, iv: number): number

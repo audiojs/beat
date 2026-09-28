@@ -1,3 +1,5 @@
+import { ODF } from '@audio/onset'
+
 export interface OnsetOpts {
   fs?: number
   frameSize?: number
@@ -38,22 +40,27 @@ export interface BeatTrackResult {
   confidence: number
 }
 
-export interface BeatTrackOpts extends TempoOpts {
+/** A precomputed ODF (`spectralFlux` result) under the ODF key, used as is: its `fs` and `hopSize` apply, `data` may be null */
+export interface OdfInput {
+  [ODF]?: FluxResult
+}
+
+export interface BeatTrackOpts extends TempoOpts, OdfInput {
   bpm?: number
   tightness?: number
 }
 
 /** Symbol key for passing a pre-computed ODF result to tempo/track functions, avoiding a second STFT pass. */
-export declare const ODF: unique symbol
+export { ODF }
 
 export declare function detect(data: Float32Array | Float64Array, opts?: OnsetOpts & TempoOpts): DetectResult
 export declare function onsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
 export declare function energyOnsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
 export declare function phaseOnsets(data: Float32Array | Float64Array, opts?: OnsetOpts): Float64Array
 export declare function bandOnsets(data: Float32Array | Float64Array, opts?: BandOnsetOpts): Float64Array
-export declare function tempo(data: Float32Array | Float64Array | null, opts?: TempoOpts): TempoResult
-export declare function combTempo(data: Float32Array | Float64Array | null, opts?: TempoOpts): TempoResult
-export declare function beatTrack(data: Float32Array | Float64Array, opts?: BeatTrackOpts): BeatTrackResult
+export declare function tempo(data: Float32Array | Float64Array | null, opts?: TempoOpts & OdfInput): TempoResult
+export declare function combTempo(data: Float32Array | Float64Array | null, opts?: TempoOpts & OdfInput): TempoResult
+export declare function beatTrack(data: Float32Array | Float64Array | null, opts?: BeatTrackOpts): BeatTrackResult
 export declare function peakPick(odf: Float64Array, opts?: OnsetOpts): Float64Array
 
 export interface FluxResult {

@@ -20,8 +20,9 @@ import combTempo from '@audio/beat-tempo/comb'
 
 export default function beatTrack(data, opts) {
   validate(data, opts)
-  let fs = opts?.fs || 44100
-  let sf = spectralFlux(data, opts)
+  // a precomputed ODF under the ODF symbol is tracked as is, as combTempo takes it
+  let sf = opts?.[ODF] || spectralFlux(data, opts)
+  let fs = sf.fs || opts?.fs || 44100
   let { odf, nFrames, hopSize } = sf
   if (nFrames < 2) return { beats: new Float64Array(0), bpm: 0, confidence: 0 }
 

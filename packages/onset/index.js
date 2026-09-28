@@ -8,8 +8,9 @@
 import fft from 'fourier-transform'
 import hann from 'window-function/hann'
 
-/** Symbol key for handing a precomputed ODF result to a downstream tempo/track pass. */
-export const ODF = Symbol('onset:odf')
+/** Symbol key for handing a precomputed ODF result to a downstream tempo/track pass. Registered (Symbol.for), so two
+ *  installed copies of this package agree on it: a private symbol from another copy read as no ODF at all. */
+export const ODF = Symbol.for('@audio/onset:odf')
 
 /**
  * Spectral flux ODF: STFT → magnitude → sum of positive bin differences.

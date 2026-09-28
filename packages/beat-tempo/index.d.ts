@@ -1,3 +1,5 @@
+import { ODF, OdfResult } from '@audio/onset'
+
 /** Tempo estimation via autocorrelation of the onset detection function. */
 export interface TempoOptions {
   /** sample rate, default 44100 */
@@ -12,6 +14,8 @@ export interface TempoOptions {
   maxBpm?: number
   /** number of ranked tempo candidates to return, default 1 */
   candidates?: number
+  /** precomputed ODF (e.g. `spectralFlux` from @audio/onset), used as is: its `fs` and `hopSize` apply, `data` may be null */
+  [ODF]?: OdfResult
 }
 
 export interface TempoCandidate {
@@ -34,4 +38,4 @@ export interface TempoResult {
  * Autocorrelation of the spectral-flux ODF, with perceptual (~120 BPM) weighting,
  * octave-duplicate suppression, and octave correction for syncopated material.
  */
-export default function tempo(data: Float32Array | Float64Array, opts?: TempoOptions): TempoResult
+export default function tempo(data: Float32Array | Float64Array | null, opts?: TempoOptions): TempoResult

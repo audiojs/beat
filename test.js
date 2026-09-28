@@ -320,6 +320,30 @@ test('detect — beat grid spacing matches BPM', () => {
   }
 })
 
+// A beat that doesn't fall at t = 0: the comb scored pulse trains laid from frame 0, so a loop whose first beat
+// came elsewhere read a wrong tempo (85, 100, 140 BPM read 149, 133, 93); and a grid phase chosen by summed
+// distances to onsets, with 8th-note hats sounding, fell anywhere between beats (120 BPM: 100 ms off).
+// Truth: the loop's own beat times; beats match within 70 ms (MIREX), tempo within 4 % or an octave.
+test('combTempo, detect, beatTrack: loops that start off the frame grid, 8th-note hats', () => {
+  for (let bpm of [85, 100, 120, 140]) {
+    let iv = 60 / bpm, t0 = 0.37, bars = 8, hits = [], beats = []
+    for (let k = 0; k < bars * 4; k++) {
+      let t = t0 + k * iv, at = s => Math.round(s * fs)
+      beats.push(t)
+      hits.push(k % 2 ? fmSnare(at(t), fs) : fmKick(at(t), fs), fmHihat(at(t), false, fs, 0.4), fmHihat(at(t + iv / 2), false, fs, 0.4))
+    }
+    let data = mixHits(hits, t0 + bars * 4 * iv + 0.5, fs)
+    let near = (b, m) => Math.abs(b - m) / m < 0.04 || Math.abs(b - 2 * m) / m < 0.08 || Math.abs(2 * b - m) / m < 0.08
+    let c = combTempo(data, { fs }), d = detect(data, { fs }), t = beatTrack(data, { fs })
+    ok(near(c.bpm, bpm), `${bpm} BPM: combTempo ${c.bpm}`)
+    for (let [name, r] of [['detect', d], ['beatTrack', t]]) {
+      if (Math.abs(r.bpm - bpm) / bpm > 0.04) continue // an octave off: the beats are the other level's
+      let hit = beats.filter(b => b > 1 && r.beats.some(x => Math.abs(x - b) < 0.07)).length, all = beats.filter(b => b > 1).length
+      ok(hit >= 0.9 * all, `${bpm} BPM: ${name} beats on ${hit} of ${all}`)
+    }
+  }
+})
+
 // --- Energy flux ---
 
 test('energyFlux — silence returns empty', () => {

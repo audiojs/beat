@@ -1,3 +1,5 @@
+import { ODF, OdfResult } from '@audio/onset'
+
 /** Dynamic programming beat tracker. */
 export interface BeatTrackOptions {
   /** sample rate, default 44100 */
@@ -14,6 +16,8 @@ export interface BeatTrackOptions {
   bpm?: number
   /** tempo constraint weight — higher is stricter, default 680 */
   tightness?: number
+  /** precomputed ODF (e.g. `spectralFlux` from @audio/onset), tracked as is: its `fs` and `hopSize` apply, `data` may be null */
+  [ODF]?: OdfResult
 }
 
 export interface BeatTrackResult {
@@ -29,4 +33,4 @@ export interface BeatTrackResult {
  * Estimates tempo (autocorrelation), then finds the globally optimal beat sequence via
  * dynamic programming — maximizing onset strength while penalizing tempo deviation.
  */
-export default function beatTrack(data: Float32Array | Float64Array, opts?: BeatTrackOptions): BeatTrackResult
+export default function beatTrack(data: Float32Array | Float64Array | null, opts?: BeatTrackOptions): BeatTrackResult
