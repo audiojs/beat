@@ -1,6 +1,6 @@
 {
   "name": "@audio/beat",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "type": "module",
   "description": "Beat detection \u2014 umbrella for @audio/beat-* atoms (onset detection, tempo estimation, beat tracking)",
   "exports": {
@@ -8,18 +8,25 @@
       "types": "./index.d.ts",
       "default": "./index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./*": {
+      "types": "./members/*.d.ts",
+      "default": "./members/*.js"
+    }
   },
   "types": "./index.d.ts",
   "files": [
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "members/"
   ],
   "sideEffects": false,
   "scripts": {
     "test": "node test.js",
     "test:all": "npm test --workspaces --if-present && npm test",
-    "publish:all": "npm publish --workspaces && npm publish"
+    "publish:all": "npm publish --workspaces && npm publish",
+    "members": "node scripts/members.js",
+    "prepublishOnly": "node scripts/members.js --check"
   },
   "repository": {
     "type": "git",
@@ -49,7 +56,7 @@
   },
   "dependencies": {
     "@audio/onset": "^1.0.3",
-    "@audio/beat-onset": "^1.0.0",
+    "@audio/beat-onset": "^1.0.4",
     "@audio/beat-tempo": "^2.0.0",
     "@audio/beat-detect": "^1.1.0",
     "@audio/beat-track": "^1.1.0"
