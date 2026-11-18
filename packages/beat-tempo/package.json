@@ -10,6 +10,9 @@
     "./package.json": "./package.json",
     "./comb": "./comb.js"
   },
+  "scripts": {
+    "prepublishOnly": "node ../../../compile/tools/tested.js"
+  },
   "files": [
     "index.js",
     "comb.js",

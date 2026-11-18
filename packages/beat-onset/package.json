@@ -12,6 +12,9 @@
     "./phase": "./phase.js",
     "./band": "./band.js"
   },
+  "scripts": {
+    "prepublishOnly": "node ../../../compile/tools/tested.js"
+  },
   "files": [
     "index.js",
     "energy.js",
